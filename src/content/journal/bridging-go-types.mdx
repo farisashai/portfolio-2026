@@ -1,7 +1,7 @@
 ---
 title: "Bridging the Server Boundary from Go to TypeScript"
 description: "Eliminating type drift between gRPC APIs and TypeScript clients through shared schemas and generated bindings."
-date: "November 2025"
+date: "February 2026"
 keywords: "Go, TypeScript, Protobuf, tRPC"
 labels: ["Engineering"]
 featured: true
@@ -10,7 +10,18 @@ draft: true
 
 ## The Disconnect
 
-Our backend services were written in Go, defined by Protocol Buffers and OpenAPI specs. Our frontend was TypeScript. This created a classic boundary problem: synchronizing types.
+As a frontend engineer, it's no secret that I love type safety. When I joined Formal, I ran into one of the classic full stack engineering problems: matching API types on the frontend with the ones on the backend to avoid runtime errors and breaking changes.
+
+When I started working at Formal, I found a pretty common setup: a TypeScript (Next.js) frontend communicating with Go backend services. The backend teams wrote their APIs in Go and used Protocol Buffers as the main source of truth for data definitions and contracts, with OpenAPI schemas generated from those proto files.
+
+This created a familiar challenge—there was no automatic way to keep our frontend’s TypeScript request and response types in sync with the backend’s definitions. The only way to stay up-to-date was to re-define and update TypeScript versions of every API type whenever the backend changed. In a fast-moving monorepo, this led to lots of manual work and mistakes, like having to constantly check network responses or chase down bugs whenever the backend’s data shapes changed unexpectedly.
+
+
+As a frontend engineer, it's no secret that I love type safety. When I joined Formal, I ran into one of the classic full stack engineering problems: matching API types on the frontend with the ones on the backend to avoid runtime errors and breaking changes..
+
+
+
+Our backend services were written in Go, defined by Protocol Buffers and OpenAPI specs. Our frontend used Next.js and TypeScript. This created a classic boundary problem: synchronizing types.
 
 We often found ourselves redefining types on the UI for consistency, manually inspecting network responses to debug shape mismatches, or relying on exported proto files from the Buf registry. The latter added package management overhead and cost money, while manual redefinition was a recipe for drift and runtime errors.
 

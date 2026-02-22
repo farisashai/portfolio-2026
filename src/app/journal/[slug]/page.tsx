@@ -1,5 +1,4 @@
-export const dynamic = "force-static";
-
+import { unstable_noStore as noStore } from "next/cache";
 import type { Metadata } from "next";
 import { BackButton } from "@/components/back-button";
 import { Container } from "@/components/container";
@@ -36,6 +35,11 @@ export default async function ArticlePage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  // Disable caching in development for HMR on content changes
+  if (process.env.NODE_ENV === "development") {
+    noStore();
+  }
+
   const slug = (await params).slug;
 
   try {
