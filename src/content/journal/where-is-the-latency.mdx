@@ -8,6 +8,30 @@ featured: false
 draft: true
 ---
 
+This is a collection of my learnings and investigations in performance benchmarking. At its core, latency breaks down into two things: **compute time** and **data transfer time**. Data is always being transferred somewhere, but for this study I'm scoping it to transfer between two machines at a minimum—not process-to-process communication, not RAM access patterns, not CPU cache hierarchies. The interesting problems live in the network: the space between machines where time is spent and where most of it is wasted.
+
+## Starting From the Metal
+
+To understand where time goes, start at the bottom.
+
+A modern CPU runs at roughly 3–5 GHz. That's **0.2–0.3 ns per clock cycle**. A single instruction—an add, a compare, a branch—completes in one or a few cycles. A trivial program in a low-level language (C, Rust, Go)—say, hashing a short string or parsing a small struct—runs in **microseconds**, well under a millisecond. In a high-level interpreted language (Python, Ruby), the same operation might be 10–100x slower due to interpretation overhead, dynamic dispatch, and memory allocation patterns—but even then, it's often still sub-millisecond for simple tasks.
+
+The point isn't that language choice doesn't matter. It's that **raw compute for typical operations is almost never the bottleneck**. Even in a high-level language, the CPU finishes its work in a fraction of the time it takes a packet to cross a network. The moment you're doing anything involving networking—an API call, a database query, a DNS lookup—compute becomes a rounding error next to data transfer. The optimization target shifts from "make the CPU faster" to "minimize the number of network hops and the distance each hop travels."
+
+This is why region placement matters more than language benchmarks for most products, and why cross-region calls dominate latency budgets.
+
+### The Human Speed Limit
+
+There's also a ceiling on how fast latency needs to be, and it's set by the human on the other end.
+
+The fastest typists hit **100–300 WPM**. That translates to roughly **10–30 ms per character** at the input layer. Average human reaction time—the time it takes to perceive a change and press a button—is around **200 ms**. Anything below that threshold feels instantaneous to the user. Anything below **10 ms** is imperceptible even for continuous interactions like typing or dragging.
+
+Displays reinforce this. Most screens run at 60 fps (**~16.7 ms per frame**) or 120 fps (**~8.3 ms per frame**). No visual change can appear faster than the next frame. Even if your code responds in 1 ms, the user won't see the result until the display refreshes.
+
+For a product, this means **optimizing a single action below the 10 ms window is almost never worth it**. If your API responds in 8 ms instead of 3 ms, no user will ever notice. The returns on micro-optimization for individual operations are invisible.
+
+The exception is **high-volume compounding operations**—things like batch processing, streaming data pipelines, or tight loops that execute thousands of times per request. A 1 ms improvement that compounds across 500 iterations is a 500 ms win. Optimize there. For single user-facing actions, respect the human speed limit and spend your engineering time on the hops that actually matter.
+
 ## The Deceptive Simplicity of `fetch()`
 
 When you write `fetch('https://api.example.com/users')` in your browser, it looks instantaneous in code. But behind that single line lies a cascade of network operations, each contributing latency. Understanding where time is spent—and where it's wasted—is the difference between a snappy application and one that feels sluggish.

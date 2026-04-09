@@ -18,7 +18,7 @@ interface HistoryItem {
 // Note: Month is 0-indexed in JavaScript Date (0 = January, 1 = February, etc.)
 const history: HistoryItem[] = [
   {
-    role: "Software Engineer, Head of Frontend",
+    role: "Head of Frontend, Founding Product Engineer",
     company: "Formal",
     start: new Date(2025, 6), // July 2025
     end: undefined, // Now
@@ -68,7 +68,7 @@ const history: HistoryItem[] = [
 ];
 
 function formatDateRange(start: Date, end?: Date) {
-  if (!end) return "Now";
+  if (!end) return `${start.getFullYear()} — Now`;
 
   const startYear = start.getFullYear();
   const endYear = end.getFullYear();
@@ -95,7 +95,7 @@ export default function AboutPage() {
   });
 
   return (
-    <Container className="flex-1 max-w-3xl">
+    <Container className="flex-1 max-w-4xl">
       <div className="flex flex-col gap-16 py-8 sm:py-12">
         {/* Header */}
         <div className="flex flex-col gap-2">
@@ -136,13 +136,12 @@ export default function AboutPage() {
             {sortedHistory.map((item) => (
               <div
                 key={item.role + item.company}
-                className="text-foreground leading-relaxed"
+                className="flex flex-col"
               >
-                <span className="font-medium">{item.role}</span>
-                <span className="text-muted-foreground"> — {item.company}</span>
-                <span className="text-muted-foreground">
-                  {" "}
-                  — {formatDateRange(item.start, item.end)}
+                <span className="font-medium text-foreground">{item.role}</span>
+                <span className="flex justify-between text-muted-foreground">
+                  <span>{item.company}</span>
+                  <span>{formatDateRange(item.start, item.end)}</span>
                 </span>
               </div>
             ))}

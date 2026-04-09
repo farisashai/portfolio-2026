@@ -1,0 +1,184 @@
+---
+title: "Designing an AI-First Product"
+description: "How strong product fundamentals compound into an AI layer that actually works—built on APIs, observability, and a layered agent architecture."
+date: "April 2026"
+keywords: "AI, Product Design, Agents, API-First, Infrastructure as Code, Observability, Architecture"
+labels: ["Engineering"]
+featured: false
+draft: true
+---
+
+## Fundamentals That Compound
+
+Most teams bolt AI onto existing products. They wrap an LLM around a chat input, point it at some docs, and call it intelligent. It works—barely. The model hallucinates, the answers drift from reality, and users learn not to trust it.
+
+At Formal, we took a different approach. We built the product foundation first—API-first with native Infrastructure as Code—and then designed an AI layer that compounds on top of those fundamentals. The AI isn't a feature. It's a consequence of decisions we made long before we wrote a single prompt.
+
+This is how strong fundamentals turn into an AI system that's accurate, fast, and genuinely useful.
+
+---
+
+## The Foundation: API-First with IaC Native
+
+API-first means something specific here. It doesn't mean "we have an API." It means the API *is* the product. Every action, every mutation, every read—the API is the single interaction layer between the user and the system. The UI is a client. Terraform is a client. The CLI is a client. They all talk to the same API, and they all get the same contract.
+
+This solves the interaction problem by definition. Most products treat the API as a secondary interface—the website is the real product, and the API is an export of some of its functionality. That creates a gap: the API can do less than the UI, or behaves differently, or lags behind. At Formal, there is no gap. The API is everything. Client state is ephemeral and easily bypassed—if a user wants to build their own interface, automate their own maintenance, or interact with the platform in a way we didn't anticipate, the API already supports it. Nothing is locked behind a UI flow.
+
+This matters for AI in ways that aren't obvious at first. When every operation is an API call with a well-defined schema, you've already solved the hardest part of building an AI agent: giving it reliable tools. There's no screen-scraping, no brittle UI automation, no reverse-engineering internal endpoints. The same API the UI calls is the same API the agent calls. The contract is identical. The agent isn't a second-class citizen working around the product—it's just another client with full access to the same surface area.
+
+Documentation lives in the monorepo alongside the code. Proto schemas define every request and response. This isn't just developer hygiene—it's the substrate the entire AI layer reads from.
+
+---
+
+## Observability as a Non-Negotiable
+
+We built log observability across both the end-user layer and the control plane itself. Every API request is tracked. Every action is visible. There's no avoiding it—not for users, not for the system, and not for the AI.
+
+This does two things. First, it gives users a complete audit trail. When the AI agent takes an action on your behalf, you can see exactly what it did, which API it called, and what the response was. There's no black box.
+
+Second, it gives the AI layer grounding. The agent can reference what actually happened—not what it thinks happened. Observability turns the AI from a guessing machine into something that operates on facts.
+
+---
+
+## The Orchestrator: Chat Agent + Background Engine
+
+The AI layer is split into two systems that work together.
+
+**The chat orchestrator** is the user-facing agent. It's reactive and conversational—you ask it something, it responds. It can take actions, answer questions, and coordinate work. But it operates in the request-response loop of a conversation, which means it's fast but bounded by the interaction.
+
+**The background engine** runs independently on a loop, executing every minute. It picks up long-running tasks, processes queued work, and runs new execution loops for anything that needs continuous attention. It doesn't wait for a user to ask—it works autonomously on tasks that have been delegated to it.
+
+The critical design decision: the chat orchestrator can hand off work to the background engine. When a user asks for something that will take time—monitoring a migration, running a multi-step workflow, waiting on external systems—the orchestrator delegates it. The user gets an immediate acknowledgment, and the background engine picks it up on its next loop.
+
+This separation means the chat agent stays fast and responsive while long-running work happens reliably in the background. Users don't stare at a loading spinner. They don't lose their conversation context. They ask, the system acknowledges, and the work happens.
+
+---
+
+## Expert Sub-Agents: Accuracy Through Specialization
+
+There's a reasonable counterargument here: models are getting increasingly general. In a developer context—coding agents, assistants, Claude Code—you can throw almost anything at a single agent and it handles it. Ask it to write Rust, then review a PR, then debug a Dockerfile. The general-purpose approach works because the model's broad knowledge is the point, and the context is naturally scoped to whatever file or task you're working on.
+
+But product is different. In a product context, a single monolithic agent carrying the full system prompt for every domain—API schemas, policy rules, workflow syntax, documentation, observability queries—bloats the context with information that isn't relevant to the current problem. The model doesn't just ignore irrelevant context. It thinks about it. It weighs it. And that dilution measurably reduces accuracy on the thing it's actually trying to do.
+
+Instead, each product area has a dedicated expert sub-agent with a smaller, focused system prompt. This is valuable for two reasons that aren't immediately obvious.
+
+First, **smaller system prompts mean faster responses.** The expert loads only what it needs, processes less, and answers quicker. In a product where users expect near-instant feedback, this matters. The Rego expert doesn't need to know about workflow YAML syntax. The API expert doesn't need documentation context. Each expert is fast because it's not carrying weight that doesn't belong to it.
+
+Second, and more importantly, **sub-agents create internal determinism within the LLM loop before surfacing a final answer.** The expert works through its problem—generating code, validating a query, composing a payload—in its own constrained context. It retries, self-corrects, and converges on an accurate result. Only then does the chat orchestrator receive the output. The orchestrator knows enough to explain the result to the user, frame it in context, and present it clearly—but it couldn't have written the Rego policy or composed the workflow YAML to the same level of accuracy and quality as the expert. The expert does the precise work; the orchestrator does the communication.
+
+This isn't the same as the "don't overfit" principle we apply to model harnesses. That principle says: don't build scaffolding around a specific model's weaknesses, because the model will improve. This is a structural decision about how products should decompose work. Even as models get smarter and more general, a product agent carrying every domain's context in a single prompt will always be slower and less accurate than one that delegates to specialists. Generality is an asset for the model's capabilities. It's a liability for the product's context window.
+
+This is modular design—but it's the version that actually works. There's a long history of modular architectures in software that fail because they decouple things that are fundamentally related. You split a monolith into microservices and suddenly every simple operation is a distributed transaction. You extract a library and now two teams maintain duplicate logic with a brittle interface between them. Decoupling for its own sake increases complexity without increasing capability. There's always a tradeoff, and bad modularity pays the cost without capturing the value.
+
+What makes this different is that it's domain-driven. These aren't arbitrary service boundaries drawn along technical lines. They're genuine domains—Rego policy, API interaction, documentation, observability, workflow automation—each with its own language, its own failure modes, and its own body of specialized knowledge. Hyperspecializing within these boundaries creates real value because the domains are meaningfully distinct. The Rego expert and the workflow expert don't partially overlap in confusing ways. They do fundamentally different things that require fundamentally different context.
+
+But they share infrastructure. Every expert runs on the same client harness. The RPC interface is identical. The way they're called, the way they return results, the way they're embedded on product pages—all of it is the same minimal scaffolding. The specialization is in the domain knowledge and system prompt, not in the plumbing. This means adding a new expert is cheap. You don't build a new framework. You define a new domain, give it the right context, and plug it into the same infrastructure every other expert uses.
+
+This is the difference between modularity that creates complexity and modularity that absorbs it. Bad decoupling fragments things that should be together. Domain-driven specialization separates things that should be apart—and keeps everything else shared.
+
+Each expert can call on other experts when it needs information outside its domain. This isn't a rigid hierarchy—it's a mesh. An expert asks a peer for a precise answer, gets it, and continues its work. No single agent needs to hold everything in memory.
+
+### The Orchestrator Problem
+
+There's a trap in this architecture that's easy to fall into. If you strip too much knowledge from the orchestrator, it stops being an agent and becomes a router. It needs to prompt the expert, but it faces the same problem a human user does: what if it asks the wrong question? What if it doesn't have the context to know what the right question even is? The expert might have examples, edge cases, and domain knowledge that would change how the question should be framed—but the orchestrator doesn't see any of that. It might prompt confidently and incorrectly, and the expert dutifully answers the wrong question with precision.
+
+This is the core tension. The orchestrator can't carry every domain's full context—that's the whole point of experts. But it needs enough knowledge to delegate effectively.
+
+There are a few ways to solve this.
+
+**Keyword-embedded product knowledge.** Instead of making the orchestrator look up context conditionally, embed core product knowledge directly into its prompt, indexed by domain keywords. When a user mentions "policy," "permissions," or "Rego," the orchestrator already has enough embedded context about what those concepts mean in the product to frame the delegation correctly. This isn't the full expert context—it's a compressed map of the product surface that tells the orchestrator what each domain does, what the common patterns are, and what the expert needs to hear. The knowledge is in the prompt before the orchestrator even decides who to call. No retrieval step, no conditional lookup, no latency.
+
+**Experts that push back.** The expert doesn't have to blindly answer whatever it's given. A well-designed expert can recognize an underspecified or misdirected prompt and ask the orchestrator for clarification—or reframe the question itself based on what it knows. This turns the delegation from a one-shot RPC into a short negotiation where the expert's domain knowledge corrects the orchestrator's framing. The orchestrator doesn't need to know everything. It needs to know enough to get the conversation started, and the expert handles the rest.
+
+---
+
+## Experts as Native Product Features
+
+Every sub-agent RPC is an API endpoint. That means every expert can be called independently—not just through the orchestrator.
+
+This unlocks something that has nothing to do with the orchestrator problem. Each product feature page can embed its own expert natively: the policy page calls the Rego expert directly, the logs page calls the Quickwit expert directly, the workflow builder calls the workflow expert directly. The user's current page *is* the context. There's no orchestrator in the middle trying to figure out which expert to call or how to frame the question. The expert receives the request with full page context and responds immediately.
+
+The orchestrator exists for open-ended conversations where the user could be asking about anything. But most of the time, users are on a specific page, looking at a specific resource, with a specific problem. In those cases, the expert embedded on that page is faster, more accurate, and needs zero orchestration. Every product surface becomes its own AI interface—no bloated general-purpose agent required.
+
+---
+
+## The Experts
+
+**API Expert.** This agent knows every proto schema in the system. It can craft a request, build the correct body payload, parse the response, and extract exactly what's needed. When any other agent needs to interact with the platform, it asks the API expert. The API expert doesn't guess at endpoints—it reads the schemas. This is where the API-first foundation pays off directly: the agent has the same contract the UI and IaC layer use.
+
+**Docs Expert.** Our documentation lives in the monorepo. The docs agent has full context over the current state of the docs, which means its answers follow a single source of truth. When the docs update, the agent's knowledge updates naturally—there's no sync step, no embedding refresh, no stale index. The team already keeps docs current because they're public-facing. The AI benefits from that discipline for free.
+
+**Rego Expert.** Writing policies and permissions is one of the most error-prone tasks in any infrastructure product. The Rego expert carries additional context based on the product area it's operating in—it understands not just the Rego language but the specific policy model and permission boundaries relevant to the user's environment. It writes correct policy code, not generic examples.
+
+**Quickwit Expert.** All of our observability data is indexed in Quickwit, and this expert knows how to query it. It can read, paginate, filter, and aggregate across the full log corpus at speed. When a user asks "what happened to this resource last Tuesday" or "show me every API call this service account made in the last hour," the Quickwit expert doesn't approximate—it pulls the actual data. This closes the loop on observability: the platform records everything, and the AI can read all of it. Other experts lean on the Quickwit expert when they need to ground their answers in what actually happened rather than what should have happened.
+
+**Workflow Automation Expert.** This is where the layered architecture reaches its full potential. The workflow expert understands Formal's YAML-based automation system and can compose any sequence of actions by leveraging the API expert for each step. Need to trigger a rotation, wait for confirmation, then update a downstream resource? The workflow expert writes the YAML, the API expert validates each call, and the result is a workflow the user can inspect, modify, and run.
+
+This is effectively infinite scripting power handed to the user. Any API call in the system can become a step in an automated workflow. The user describes what they want, and the agent composes it from real, validated API operations—not hallucinated scripts.
+
+**Web Search.** The one tool that reaches outside the platform. We're not granting execution in a sandbox environment—there's no shell, no arbitrary code running on behalf of the agent. But web search is still essential. Formal is a security product, and security doesn't stand still. The agent can look up recent CVEs, check advisories, reference current best practices, and surface relevant news. When a user asks whether a specific dependency has a known vulnerability or what the latest recommendation is for a TLS configuration, the agent doesn't rely on stale training data. It searches, reads, and answers with current information. This makes the agent a genuine security assistant—not just an interface to the product, but a tool that stays current with the threat landscape.
+
+---
+
+## Two Modes of Interaction
+
+The AI chat interface adapts to how the user is working, not the other way around.
+
+**Helper mode** is a floating chat window that lives alongside the product. It sees the active page you're on—if you're looking at a data store configuration, the agent already has that context. You don't need to explain what you're looking at or paste in resource IDs. The agent reads the page, understands the entity, and responds in context. This mode is designed for quick questions and lightweight actions without leaving what you're doing.
+
+**Primary mode** takes the full space. The chat becomes the primary interface, and a panel alongside it shows a live preview of the entity the agent is modifying. When the agent updates a policy, you see the policy. When it edits a workflow, you see the workflow. You're not trusting the agent's text description of what it did—you're watching the actual resource change in real time.
+
+This dual-mode design means users choose their depth of engagement. Sometimes you want a quick answer while configuring something. Sometimes you want to hand the wheel to the agent and watch it work. Both modes draw from the same orchestrator, the same experts, and the same observable API layer underneath.
+
+---
+
+## Why Layering Matters
+
+Every layer in this system was built to be independently valuable. The API-first design serves developers who never touch the AI. The observability layer serves compliance teams who never open the chat. The IaC support serves platform engineers who work entirely in Terraform.
+
+But when these layers stack, the AI becomes something that wouldn't be possible without all of them:
+
+- The API expert is accurate because the API is well-defined and documented.
+- The docs expert is current because docs live in the repo and the team maintains them.
+- The Rego expert is correct because observability shows exactly how policies are evaluated.
+- The workflow expert is powerful because every operation is an API call that can be composed.
+- The orchestrator is fast because experts handle the heavy lifting.
+- The background engine is reliable because actions are auditable and observable.
+
+None of these AI capabilities were "added." They emerged from a product that was designed with strong fundamentals from the start. The AI layer didn't require a rewrite or a new architecture. It required good infrastructure—and the discipline to build it before it was needed.
+
+---
+
+## Trust the Model, Invest in Tools
+
+There's a design philosophy running underneath all of this: trust the agent's intelligence and give it the most powerful tools you can.
+
+Look at how the broader AI ecosystem has converged. The most capable general-purpose agents—Claude Code, computer use agents, coding assistants—landed on a remarkably simple toolkit: bash, a browser, file read/write, and search. That's it. Give a sufficiently intelligent model a shell and a web browser and it can do almost anything a human can do at a computer. The industry didn't converge on this because it's elegant. It converged because it works. The model's reasoning handles the complexity. The tools just need to be powerful and general.
+
+We followed the same principle. Instead of building narrow, hand-coded AI workflows that break every time the product changes, we gave our agents the most powerful primitives available: a complete API with every operation, full documentation, observable logs of every action, and composable workflow automation. These are our equivalent of bash and web search—general-purpose tools that don't constrain what the agent can do.
+
+This is a bet on the model improving over time—and equally, a bet against the work that won't survive it.
+
+Every AI product today is full of harnesses. Output parsers that compensate for unreliable JSON. Retry loops tuned to a specific model's failure patterns. Prompt chains that steer the model through reasoning steps it couldn't handle on its own six months ago. Guardrails bolted on to catch hallucinations that the next model version might not even produce. These aren't features. They're patches for a specific model's behavior at a specific point in time.
+
+The problem with patches is that they couple your product to the model's weaknesses. When the model improves—when it stops making the mistake your harness was designed to catch—the harness doesn't gracefully disappear. It becomes dead weight. Worse, it becomes a constraint. You've built scaffolding around limitations that no longer exist, and now that scaffolding shapes what your product can do. You're maintaining code whose only purpose was to work around a problem that's already been solved.
+
+We made a deliberate choice to avoid this. Instead of harnessing model behavior, we invested in the tools the model uses. When the model gets smarter, it doesn't run into scaffolding we built for a dumber version of itself. It gets access to the same powerful primitives—every API endpoint, every doc page, every policy schema, every workflow action—and it does more with them.
+
+A smarter model with access to a complete API doesn't just get incrementally better. It unlocks capabilities you didn't explicitly build. The Rego expert writes more complex policies. The workflow agent composes longer, more reliable automations. The API expert handles edge cases it used to miss. You didn't ship a new feature. The model got smarter, and your tools were already there to support it.
+
+This is the real argument for investing in fundamentals over AI-specific features. The API doesn't care whether it's called by a human, a Terraform provider, or an agent. The docs don't care whether they're read by an engineer or a sub-agent. The observability layer doesn't care whether it's auditing a manual action or an automated one. These systems are model-agnostic by design—which means they're future-proof by accident.
+
+The teams building the most brittle AI products right now are the ones writing harnesses for today's model. The teams building the most durable ones are the ones that barely think about the model at all, because the tools they hand it are so well-built that the model just figures it out. When the next generation arrives, those teams won't be ripping out scaffolding. They'll just be better—automatically.
+
+---
+
+## The Takeaway
+
+If you're designing a product and thinking about where AI fits, start with the foundation. Build a real API. Document it. Make every action observable. Give your system a single source of truth for documentation. Design for composability.
+
+Then, when you build the AI layer, you won't be fighting your own product to make it work. You'll be compounding on decisions that were already paying dividends. The AI becomes a natural extension of the product—not a bolted-on experiment that users learn to distrust.
+
+Give the agent powerful tools. Trust that the intelligence will catch up. And build the kind of infrastructure that makes "catching up" feel effortless.
+
+Strong fundamentals aren't just good engineering. They're the best AI strategy.
