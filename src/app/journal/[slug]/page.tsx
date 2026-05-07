@@ -42,7 +42,7 @@ export default async function ArticlePage({
     const { content, frontmatter } = await getMDXContent(slug);
 
     return (
-      <Container className="max-w-3xl py-8 sm:py-12">
+      <Container className="max-w-5xl py-8 sm:py-12">
         <BackButton />
 
         <article className="flex flex-col gap-8">
@@ -73,7 +73,7 @@ export default async function ArticlePage({
     );
   } catch {
     return (
-      <Container className="max-w-3xl py-12 sm:py-24">
+      <Container className="max-w-5xl py-12 sm:py-24">
         <p>Article not found.</p>
       </Container>
     );

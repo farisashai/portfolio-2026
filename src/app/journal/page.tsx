@@ -66,6 +66,10 @@ export default async function JournalPage() {
             </div>
           )}
         </div>
+
+        <p className="text-muted-foreground/50 text-xs pt-4">
+          Ideas and opinions are entirely my own, drafted with AI assistance.
+        </p>
       </div>
     </Container>
   );

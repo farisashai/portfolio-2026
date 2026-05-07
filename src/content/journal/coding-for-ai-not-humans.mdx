@@ -1,0 +1,106 @@
+---
+title: "Iterative Engineering in Codebases Designed for Agents"
+description: "Why the conventions that worked for human teammates fail for AI agents, and what changes when every rule is designed to be deterministically impossible to violate."
+date: "May 2026"
+keywords: "AI, Codebase Design, Linting, Monorepo, Codegen, Architecture, Conventions, Developer Experience"
+labels: ["Engineering", "Learnings"]
+featured: false
+draft: false
+---
+
+## A Different Audience
+
+Five years ago, the audience for a codebase was a future human. Conventions sat in a CONTRIBUTING.md, examples in a README. New teammates were trusted to absorb the patterns over a few weeks; code review caught the rest. Style was negotiated. Drift was tolerated.
+
+That operational model assumed continuity: someone who notices "we don't do that here" because they've seen the alternative work three times. AI agents don't have that. Every session is a cold start. The agent loads a slice of the repo, looks for the nearest example, and writes whatever pattern the surrounding code suggests. If the surrounding code has two patterns, the result is a coin flip.
+
+Designing for an AI agent means designing for a reader with no continuity, no memory between sessions, and a strong tendency to copy whatever it sees. Once that's accepted, almost every soft convention becomes a check that has to run in CI.
+
+## Deterministic Impossibility
+
+A rule that *could* be violated will eventually be violated. The goal is to make violations deterministically impossible, not unlikely.
+
+Speed makes this matter more, not less. Faster iteration cycles demand faster feedback loops, and more failure in development and CI now is what reduces long-term maintenance later. A check that fires on the first violation costs minutes in the same PR; a pattern that quietly drifts across fifty PRs costs a refactor.
+
+A precise rule produces a fast fix. "Don't do X" with a clear violation pattern and an actionable hint is something an agent can satisfy in one round trip. "Use good judgment" is something an agent will guess at and lose.
+
+## Why This Works Mechanically
+
+Models are probabilistic systems generating reasonable output, and the faster they're asked to run, the more critical details and structural planning they miss. Specifying enough nuance in a prompt to close that gap is borderline rewriting the code by hand. The honest answer is to let the model generate against narrow priors, and let the checks correct what the prompt couldn't.
+
+Context windows make this concrete. A short file gets read in full and reasoned about in full; a long file gets a window read and the rest inferred, badly. Capping file length forces a split when a component grows past it, which keeps every file within the agent's reasoning window and makes each one independently understandable.
+
+Modern models are smart enough for most tasks. The job now is alignment and compounding effects: pointing the model at the right shape of work and stacking constraints so each successful run makes the next one cheaper. The right way to decide which checks to write is to watch where the agents in actual use fail. The habit of turning observed failures into checks is what generalizes across projects, not the specific checks themselves.
+
+## The Flywheel
+
+Every mistake gets fixed in the moment. The more important question is whether it was a one-off product bug or a maintainability mistake that could surface again in a different shape. The second kind is worth a permanent check. That triage is the PR review you'd do on a teammate's diff, done in real time during development to find the rule that prevents the next instance.
+
+Two examples from real PRs:
+
+- A page-level `useState` was coordinating editor and panel children that should have been a Zustand store. There's now a check that flags page-level state passed to multiple distinct child trees.
+- Stories were mounting components that fired real API calls. A check walks story files, follows their imports, and rejects any component in the graph that performs data fetching. No escape hatch. The agent has to extract a presentational sibling, which is the separation of concerns to want everywhere.
+
+Each rule started as a real mistake and became a permanent property of the repo within minutes. The repo gets sharper every week, almost passively.
+
+Writing these checks used to be expensive enough to discourage them: custom AST work or fragile regex, hard to maintain after the fact. Agents flip the economics. Each check has a small self-contained spec, takes minutes to write, and is just as cheap to edit or delete. There's no bloat risk as long as each script does one thing well.
+
+## Validation Is Half the Architecture
+
+Architecture isn't only about where code goes; it's about how to prove the code works after an agent edits it. The validation layers are as load-bearing as the directory structure.
+
+Storybook is a required UI layer: every component has a colocated story, and architecture checks fail the build if a lib component ships without one. The UI's entire state space sits in one place, and rendering changes are visible at the layer where rendering bugs actually live. Unit tests cover the functional layer underneath: stores, utilities, parsers, schemas, anything where behavior is observable through inputs and outputs. Agents are good at writing these when they understand intent during a conversation, and the tests pin down the contract so the next agent doesn't introduce a regression two prompts later.
+
+Codegen extends the same idea across the backend boundary. Backend, frontend, and proto definitions live in one monorepo, and generated artifacts are gitignored so the agent cannot edit them. A breaking change to a proto becomes a frontend type error in the same PR that introduced it. An agent has to pass lint for shape, unit tests for behavior, Storybook for rendering, and type generation for contracts to ship a change. Reviewers can trust those layers and look only at the one layer the agent can't validate for itself: whether the change is the right thing to build.
+
+A side effect of layering this strictly is that refactors become close to trivial. Changing how a form validates touches the form layer; swapping a UI primitive touches the component layer; renaming a backend field touches the generated types and lights up every consumer in the same PR. Each change is scoped to a single layer instead of cascading through tangled responsibilities, which is what makes large refactors feel routine instead of risky.
+
+## Conventions Live in CI
+
+PR review used to be where conventions were enforced. With most diffs being agent-generated, manual line-by-line review doesn't scale, and a reviewer's attention is too valuable to burn on style. Lints have to do that job. PR reviews now focus on product behavior and architectural fit, because every other category of feedback is already a check.
+
+The same forcing function that disciplines the agent makes the codebase legible to anyone, AI or human. A new contributor knows where to look for a hook, a constant, a store, a subcomponent, because the layout is encoded in the checks rather than absorbed by tenure. Imports follow one shape. State lives in one place per feature. None of that is something a teammate has to learn by being scolded in review; the patterns are visible the moment they open the repo.
+
+That readability was exactly what was missing in the previous codebase. Agents had been shipping faster than any human could read, so nobody was correcting the patterns the agents were guessing at, and drift compounded with every PR. Making the codebase legible enough that the next mistake was visible, and small enough that the correction was a check away, was the only fix that scaled.
+
+## Operating Principles
+
+The checks cluster around a small set of principles that compound when applied together.
+
+- **One correct pattern per problem.** Two ways to fetch, two ways to model state, two ways to handle a form, and the agent picks one at random. A single canonical path means existing code becomes the implicit answer for new code.
+- **Treat the language as too powerful by default.** Modern languages ship more syntax than any one project should use. Pruning specific patterns that cause real bugs keeps the cognitive surface small for both humans and agents.
+- **Cap file length to preserve navigation.** Short files get read fully. Long files get inferred badly. The cap is the difference between understanding the code and hallucinating pieces of it.
+- **Promote shared code, never import sideways.** Features don't import from other features. When two need the same helper, it moves up to a shared tier first, and the linter catches sideways imports and demands the promotion.
+- **Strict typing with no escape hatches.** No `any`, no type assertions, no `typeof` for data validation. Types describe reality or they don't exist. Schemas at boundaries, generated types from contracts.
+- **Encode systems-level concerns as checks.** Long-standing engineering problems like forms always going through one validation library, modals never opening concurrently in uncontrolled ways, toasts and routes and doc URLs flowing through a single source of truth, used to live in code review or stay permanently broken. They can now live in the linter. A check that recognizes a `<form>` and demands React Hook Form with a Zod resolver is the difference between a convention everyone forgets and a property of the codebase.
+- **Every override is visible.** Disabling a rule requires a comment with the rule name and a reason. Silent overrides are banned. Audit is the price of strictness, and the trace is what lets a future maintainer decide whether to fix the underlying issue or accept the exception.
+
+A useful corollary: a heuristic rule with an auditable disable comment is better than no rule at all. A check that occasionally over-fires still catches the cases that matter, as long as the override leaves a visible trace. Refusing to write a rule because it can't be perfect is how systems-level concerns end up unenforced.
+
+## The Role Narrows
+
+In our previous codebase, agent-written code accumulated bloat I couldn't fully read. In the new repo, I have written essentially none of the code by hand, and yet the code looks like I wrote it. The patterns are mine because I encoded them as checks. The structure is mine because the checks rejected anything else.
+
+The job an engineer does on a project like this narrows to three things:
+
+1. **Architectural decisions.** What lives where, what depends on what, what's allowed to grow, and which categories of mistake the checks should make impossible.
+2. **Simplification.** AI adds complexity before it removes it; somebody has to push the other direction. Every line that exists has to be reviewed, tested, and reasoned about when something breaks.
+3. **Product taste.** Deciding what to build next, which surfaces deserve real polish, and what the user is actually trying to do that the spec didn't quite capture.
+
+Everything else is downstream. Writing the code, fixing the bug, satisfying the lint, regenerating the types: an agent can do all of it once the rules are right. Getting the rules right is the work.
+
+## The Floor for Software Engineering Is Rising
+
+A common take right now is that software engineering is winding down because models can write code. The opposite is true. The work being automated was already commoditized: CRUD endpoints, list-and-detail pages, the thousandth paginated table. The hard part is deciding what to build, where the seams go, and which mistakes to make impossible. Those calls take years of experience, and models can't make them without supervision.
+
+Implementation detail is becoming what compiler output became. Programmers used to care about the assembly a compiler produced, then they stopped, because the layer above was the one that mattered. The same shift is happening above an LLM. The skill that matters is knowing what layer the work is on and which decisions the model genuinely cannot make.
+
+A model will never, on its own, write minimal, maintainable, legible code that holds up across a real codebase. It doesn't have the maintainer's taste, and the next frontier model trained on slightly different data won't either. Taste is downstream of judgment about a specific product, team, and set of constraints. Without a personalization harness, the model defaults to the median of its training distribution, and the median is not where good code lives.
+
+Markdown prompts, Claude memory files, Cursor rules, and Codex skills are early attempts at that harness. They help. They are also vague, easily ignored, and constantly drifting against what the model actually generates, because nothing enforces them at the boundary that matters. A natural-language instruction is a suggestion; a CI check is a contract. The contract version of taste, expressed as deterministic rules over the codebase, is the only harness that compounds across prompt rewrites, model upgrades, and team turnover.
+
+Some engineers worry about losing the implementation skills that used to define competence. The worry is misplaced. There is an endless supply of problems harder than the ones the model has absorbed, and the productive response is to walk up to them. Hiring practices need to follow the same shift. An interview that grades a candidate on work the model already does well is testing for a skill that stopped being scarce.
+
+The new paradigm lets good engineers ship more software, and better software, on smaller teams. It also still lets new engineers become good, just not by drilling on what's already automated. The path in is building with agents and using the breadth that exposes: how systems are designed, which patterns get chosen and why, what alternatives exist, what each model gets wrong and why. The judgment to direct an agent is faster to develop now than the implementation skills it replaces ever were.
+
+What's left is the work that was always worth doing. Everything that wasn't is finally something else's problem.

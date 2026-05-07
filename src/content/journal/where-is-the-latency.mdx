@@ -8,15 +8,15 @@ featured: false
 draft: true
 ---
 
-This is a collection of my learnings and investigations in performance benchmarking. At its core, latency breaks down into two things: **compute time** and **data transfer time**. Data is always being transferred somewhere, but for this study I'm scoping it to transfer between two machines at a minimum—not process-to-process communication, not RAM access patterns, not CPU cache hierarchies. The interesting problems live in the network: the space between machines where time is spent and where most of it is wasted.
+This is a collection of my learnings and investigations in performance benchmarking. At its core, latency breaks down into two things: **compute time** and **data transfer time**. Data is always being transferred somewhere, but for this study I'm scoping it to transfer between two machines at a minimum, excluding process-to-process communication, RAM access patterns, and CPU cache hierarchies. The interesting problems live in the network: the space between machines where time is spent and where most of it is wasted.
 
 ## Starting From the Metal
 
 To understand where time goes, start at the bottom.
 
-A modern CPU runs at roughly 3–5 GHz. That's **0.2–0.3 ns per clock cycle**. A single instruction—an add, a compare, a branch—completes in one or a few cycles. A trivial program in a low-level language (C, Rust, Go)—say, hashing a short string or parsing a small struct—runs in **microseconds**, well under a millisecond. In a high-level interpreted language (Python, Ruby), the same operation might be 10–100x slower due to interpretation overhead, dynamic dispatch, and memory allocation patterns—but even then, it's often still sub-millisecond for simple tasks.
+A modern CPU runs at roughly 3-5 GHz. That's **0.2-0.3 ns per clock cycle**. A single instruction (an add, a compare, a branch) completes in one or a few cycles. A trivial program in a low-level language (C, Rust, Go), say, hashing a short string or parsing a small struct, runs in **microseconds**, well under a millisecond. In a high-level interpreted language (Python, Ruby), the same operation might be 10-100x slower due to interpretation overhead, dynamic dispatch, and memory allocation patterns, but even then, it's often still sub-millisecond for simple tasks.
 
-The point isn't that language choice doesn't matter. It's that **raw compute for typical operations is almost never the bottleneck**. Even in a high-level language, the CPU finishes its work in a fraction of the time it takes a packet to cross a network. The moment you're doing anything involving networking—an API call, a database query, a DNS lookup—compute becomes a rounding error next to data transfer. The optimization target shifts from "make the CPU faster" to "minimize the number of network hops and the distance each hop travels."
+Language choice still matters, but **raw compute for typical operations is almost never the bottleneck**. Even in a high-level language, the CPU finishes its work in a fraction of the time it takes a packet to cross a network. The moment networking enters the picture (an API call, a database query, a DNS lookup) compute becomes a rounding error next to data transfer. The optimization target shifts from "make the CPU faster" to "minimize the number of network hops and the distance each hop travels."
 
 This is why region placement matters more than language benchmarks for most products, and why cross-region calls dominate latency budgets.
 
@@ -24,64 +24,64 @@ This is why region placement matters more than language benchmarks for most prod
 
 There's also a ceiling on how fast latency needs to be, and it's set by the human on the other end.
 
-The fastest typists hit **100–300 WPM**. That translates to roughly **10–30 ms per character** at the input layer. Average human reaction time—the time it takes to perceive a change and press a button—is around **200 ms**. Anything below that threshold feels instantaneous to the user. Anything below **10 ms** is imperceptible even for continuous interactions like typing or dragging.
+The fastest typists hit **100-300 WPM**. That translates to roughly **10-30 ms per character** at the input layer. Average human reaction time (the time it takes to perceive a change and press a button) is around **200 ms**. Anything below that threshold feels instantaneous to the user. Anything below **10 ms** is imperceptible even for continuous interactions like typing or dragging.
 
 Displays reinforce this. Most screens run at 60 fps (**~16.7 ms per frame**) or 120 fps (**~8.3 ms per frame**). No visual change can appear faster than the next frame. Even if your code responds in 1 ms, the user won't see the result until the display refreshes.
 
-For a product, this means **optimizing a single action below the 10 ms window is almost never worth it**. If your API responds in 8 ms instead of 3 ms, no user will ever notice. The returns on micro-optimization for individual operations are invisible.
+For a product, this means **optimizing a single action below the 10 ms window is almost never worth it**. An API responding in 8 ms instead of 3 ms is invisible to users. The returns on micro-optimization for individual operations are invisible.
 
-The exception is **high-volume compounding operations**—things like batch processing, streaming data pipelines, or tight loops that execute thousands of times per request. A 1 ms improvement that compounds across 500 iterations is a 500 ms win. Optimize there. For single user-facing actions, respect the human speed limit and spend your engineering time on the hops that actually matter.
+The exception is **high-volume compounding operations**: things like batch processing, streaming data pipelines, or tight loops that execute thousands of times per request. A 1 ms improvement that compounds across 500 iterations is a 500 ms win. Optimize there. For single user-facing actions, respect the human speed limit and spend engineering time on the hops that actually matter.
 
 ## The Deceptive Simplicity of `fetch()`
 
-When you write `fetch('https://api.example.com/users')` in your browser, it looks instantaneous in code. But behind that single line lies a cascade of network operations, each contributing latency. Understanding where time is spent—and where it's wasted—is the difference between a snappy application and one that feels sluggish.
+A single `fetch('https://api.example.com/users')` in the browser looks instantaneous in code. But behind that single line lies a cascade of network operations, each contributing latency. Understanding where time is spent (and where it's wasted) is the difference between a snappy application and one that feels sluggish.
 
-This post walks through the full request/response lifecycle from "user taps a button" to "UI updated," breaking down each phase with concrete numbers and identifying common footguns that can **double your latency or worse**.
+This post walks through the full request/response lifecycle from "user taps a button" to "UI updated," breaking down each phase with concrete numbers and identifying common footguns that can **double latency or worse**.
 
-Let's anchor this in reality first: what latency should you actually expect?
+First, an anchor in reality: what latency should one actually expect?
 
 ## Baseline: Latency Within Your Infrastructure
 
-Before we dive into browser-to-API calls, let's establish realistic expectations for latency within AWS/GCP/Azure infrastructure. These are rough ballparks, but the orders of magnitude are what matter.
+Before browser-to-API calls, here are realistic expectations for latency within AWS/GCP/Azure infrastructure. These are rough ballparks, but the orders of magnitude are what matter.
 
 ### Same Machine / Same Pod
 - **Same process/container**: Effectively **0 ms** from a network perspective
 - **Same node via loopback** (`localhost`): Well under **0.1 ms**
 
-You won't optimize this further for typical web workloads.
+There's no further optimization here for typical web workloads.
 
 ### Same AZ, Same VPC
-- **App server → DB in same AZ**: Usually **0.1–0.5 ms** network latency
-- **P99**: Typically under **1–2 ms**
+- **App server → DB in same AZ**: Usually **0.1-0.5 ms** network latency
+- **P99**: Typically under **1-2 ms**
 
 For web/API apps, this is effectively "free" compared to TLS handshakes, app logic, or the DB query time itself.
 
 ### Cross-AZ, Same Region
-- **App in us-east-1a, DB in us-east-1c**: Around **1–2 ms** network hop
-- **Worst case**: **3–5 ms**
+- **App in us-east-1a, DB in us-east-1c**: Around **1-2 ms** network hop
+- **Worst case**: **3-5 ms**
 
 Still small, but multiple cross-AZ hops per request can stack up.
 
 ### Cross-Region
-- **us-east-1 ↔ us-west-2**: ~**60–80 ms** RTT
-- **us-east-1 ↔ EU**: ~**70–120 ms** RTT
+- **us-east-1 ↔ us-west-2**: ~**60-80 ms** RTT
+- **us-east-1 ↔ EU**: ~**70-120 ms** RTT
 
-**This is where your latency budget gets killed if you're careless.**
+**This is where the latency budget gets killed under careless setups.**
 
 ### Is Further Optimization Worth It?
 
-Once services and databases are in the same region (ideally same AZ), optimizing raw network latency further is almost never your first-order problem. You get far bigger wins by:
+Once services and databases are in the same region (ideally same AZ), optimizing raw network latency further is almost never the first-order problem. The far bigger wins come from:
 
 - Avoiding cross-region anything
 - Cutting down handshakes
 - Fixing DB/query behavior
 - Avoiding synchronous third-party calls
 
-You only obsess about placement groups, kernel tuning, or shaving microseconds if you're doing HFT, real-time audio/video at scale, or very high QPS low-latency trading/streaming systems.
+Obsessing over placement groups, kernel tuning, or shaving microseconds only makes sense for HFT, real-time audio/video at scale, or very high QPS low-latency trading/streaming systems.
 
 ## The Complete Request Lifecycle
 
-Let's trace what actually happens when a user clicks a button and your browser executes `fetch()`:
+Here's what actually happens when a user clicks a button and the browser executes `fetch()`:
 
 ```
 User clicks button → JS scheduling → DNS lookup → TCP handshake → TLS handshake →
@@ -89,11 +89,11 @@ HTTP request → Edge/CDN → App server → DB/services → Observability →
 HTTP response → Browser decompression → JSON parsing → React render
 ```
 
-Each step can add milliseconds—or hundreds of milliseconds if misconfigured.
+Each step can add milliseconds, or hundreds of milliseconds if misconfigured.
 
 ### Phase 1: DNS Resolution (5-50ms typical, 100ms+ worst case)
 
-Before your browser can connect to `api.example.com`, it must resolve that domain to an IP address.
+Before the browser can connect to `api.example.com`, it must resolve that domain to an IP address.
 
 **What happens:**
 - Browser checks its DNS cache (cache hit ≈ 0 ms)
@@ -103,17 +103,17 @@ Before your browser can connect to `api.example.com`, it must resolve that domai
 
 **Problem: Too many hostnames**
 
-Your frontend calls `api1.example.com`, `billing.example.com`, `realtime.example.com`, etc. Each hostname can require its own DNS lookup, TCP+TLS handshake, and connection pool.
+A frontend that calls `api1.example.com`, `billing.example.com`, `realtime.example.com`, etc. forces each hostname to require its own DNS lookup, TCP+TLS handshake, and connection pool.
 
 **Simple fix:**
-- Use **one primary API hostname** per app (e.g., `api.example.com`) unless you have a concrete reason not to
+- Use **one primary API hostname** per app (e.g., `api.example.com`) absent a concrete reason not to
 - Keep static assets on one or two well-known domains (`cdn.example.com`)
-- Let internal services use service discovery inside the VPC—this is about browser-facing hostnames
+- Let internal services use service discovery inside the VPC; this is about browser-facing hostnames
 
 **What to expect:**
 - DNS will be resolved once and cached (subject to TTL)
 - TLS sessions will be reused
-- Avoid 1-2 extra RTTs per new hostname: saves **tens to hundreds of ms** on first page load
+- Avoiding 1-2 extra RTTs per new hostname saves **tens to hundreds of ms** on first page load
 
 **Additional optimizations:**
 - Use `<link rel="dns-prefetch" href="//api.example.com">` for known endpoints
@@ -122,7 +122,7 @@ Your frontend calls `api1.example.com`, `billing.example.com`, `realtime.example
 
 ### Phase 2: TCP Handshake (1 RTT)
 
-Once DNS resolves, your browser establishes a TCP connection via the three-way handshake:
+Once DNS resolves, the browser establishes a TCP connection via the three-way handshake:
 
 ```
 Client → SYN → Server
@@ -131,22 +131,22 @@ Client → ACK → Server
 ```
 
 This takes **one full round-trip time (RTT)**:
-- NYC to us-east-1: **10–20 ms**
-- NYC to us-west-2: **60–80 ms**
-- NYC to EU: **100–150 ms**
+- NYC to us-east-1: **10-20 ms**
+- NYC to us-west-2: **60-80 ms**
+- NYC to EU: **100-150 ms**
 
 **Problem: Not reusing TCP/TLS connections (keep-alive disabled or misused)**
 
-Each HTTP request opens a new connection: TCP handshake (1 RTT) + TLS handshake (1 RTT). You effectively add **2 RTTs** to every call.
+Each HTTP request opens a new connection: TCP handshake (1 RTT) + TLS handshake (1 RTT). That effectively adds **2 RTTs** to every call.
 
 **Simple fix:**
-- Ensure **HTTP keep-alive** is enabled on your reverse proxy (NGINX/Envoy/API gateway) and app server
-- Prefer **HTTP/2 or HTTP/3** between client ↔ edge and edge ↔ services—they multiplex multiple requests over one connection
+- Ensure **HTTP keep-alive** is enabled on the reverse proxy (NGINX/Envoy/API gateway) and app server
+- Prefer **HTTP/2 or HTTP/3** between client and edge, and between edge and services; they multiplex multiple requests over one connection
 
 **What to expect:**
 - For warm traffic, per-request network overhead drops from ~3 RTTs to ~1 RTT
-- In us-east-1, that's going from **30–60 ms to 10–20 ms** of pure network cost
-- This very often cuts **20–40+ ms** off typical app calls
+- In us-east-1, that's going from **30-60 ms to 10-20 ms** of pure network cost
+- This very often cuts **20-40+ ms** off typical app calls
 
 **Additional optimizations:**
 - Use `<link rel="preconnect" href="https://api.example.com">` to establish TCP+TLS before the first request
@@ -177,7 +177,7 @@ For NYC to us-west-2 (75ms RTT):
 
 **Problem: Still using TLS 1.2 or no session resumption**
 
-Without TLS 1.3 and session resumption, you pay the full handshake cost on every new connection.
+Without TLS 1.3 and session resumption, every new connection pays the full handshake cost.
 
 **Simple fix:**
 - **Enforce TLS 1.3** minimum (disable TLS 1.2 if possible)
@@ -188,7 +188,7 @@ Without TLS 1.3 and session resumption, you pay the full handshake cost on every
 **What to expect:**
 - Upgrading from TLS 1.2 to 1.3 saves **one full RTT** (50-150ms depending on distance)
 - Session resumption can make subsequent connections effectively "free" after the first
-- Combined with keep-alive, you might only pay TLS cost once per user session
+- Combined with keep-alive, TLS cost can compress to once per user session
 
 ### Phase 4: HTTP Headers and Request Size
 
@@ -216,8 +216,8 @@ On a bad mobile connection (1 Mbps):
 - 10 KB ≈ **80 ms**
 
 **Rough rule of thumb:**
-- Below **2–4 KB** header size, you don't care about their bytes—you care more about extra round trips (redirects, auth challenges)
-- Above **8–16 KB** per request, especially for high QPS or mobile users, audit for:
+- Below **2-4 KB** header size, the bytes don't matter; extra round trips (redirects, auth challenges) matter more
+- Above **8-16 KB** per request, especially for high QPS or mobile users, audit for:
   - Cookie bloat (mega JWTs)
   - Excess headers (per-request tracing baggage, verbose custom headers)
 
@@ -234,7 +234,7 @@ On a bad mobile connection (1 Mbps):
 
 ### Phase 5: Server-Side Architecture and Processing
 
-This is where backend architecture decisions can easily add **50–300+ ms**—or more—if you're not careful.
+This is where backend architecture decisions can easily add **50-300+ ms** (or more) under careless setups.
 
 #### Typical Modern Setup
 
@@ -249,11 +249,11 @@ Imagine:
 **Ideal path:**
 1. Browser → Edge (same region, cached DNS, reused connection)
 2. Edge → App in same region (sub-ms LAN latency)
-3. App → DB in same AZ (0.1–0.5 ms)
+3. App → DB in same AZ (0.1-0.5 ms)
 4. Observability: local agent, batched, async
 5. App → Edge → Browser
 
-Total network cost is dominated by user ↔ region RTT (~20–40 ms) plus server processing.
+Total network cost is dominated by user ↔ region RTT (~20-40 ms) plus server processing.
 
 #### Problem 1: Cross-Region Calls (or DB in the wrong place)
 
@@ -264,18 +264,18 @@ Total network cost is dominated by user ↔ region RTT (~20–40 ms) plus server
 
 **Simple fix:**
 - Put **user-facing app servers and their primary DB in the same region, ideally same AZ** for the hot path
-- If you need global users, use **edge routing** to send them to the nearest region containing the app and DB
+- For global users, use **edge routing** to send them to the nearest region containing the app and DB
 - Or use read replicas for read-heavy workloads (but be careful about writes)
 
 **What to expect:**
-- Fixing cross-region mistakes often recovers **50–150 ms per cross-region hop**
+- Fixing cross-region mistakes often recovers **50-150 ms per cross-region hop**
 - This is usually one of the biggest "oh wow" reductions when people move a DB into the same region as the app
 
 #### Problem 2: Sequential Work Instead of Parallel
 
 **The pattern:**
 
-In your API handler:
+In an API handler:
 ```ts
 const user = await db.getUser(id)       // 20 ms
 const orders = await db.getOrders(id)   // 20 ms
@@ -296,12 +296,12 @@ const [user, orders, recs] = await Promise.all([
 ])
 ```
 
-On the backend (Go, Java, etc.), do the same with goroutines, futures, thread pools. Just **bound concurrency** so you don't overload DB or downstream services.
+On the backend (Go, Java, etc.), do the same with goroutines, futures, thread pools. Just **bound concurrency** to avoid overloading the DB or downstream services.
 
 **What to expect:**
 - Total time becomes roughly the **max** of individual calls, not the sum
 - Example above: **~40 ms instead of 80 ms**
-- With real APIs doing 5–10 calls, this often saves **50–150 ms**
+- With real APIs doing 5-10 calls, this often saves **50-150 ms**
 
 #### Problem 3: Unindexed DB Queries / N+1
 
@@ -313,7 +313,7 @@ On the backend (Go, Java, etc.), do the same with goroutines, futures, thread po
 
 1. **Indexes:**
    - For every query on the hot path, ensure `WHERE`, `JOIN`, and `ORDER BY` columns have appropriate indexes
-   - Use your DB's `EXPLAIN` to confirm you're using indexes, not doing full scans
+   - Use the DB's `EXPLAIN` to confirm indexes are in use, not full scans
 
 2. **Avoid N+1:**
    - Use **batching**: fetch all related rows in one query using `IN (?)` or joins
@@ -321,8 +321,8 @@ On the backend (Go, Java, etc.), do the same with goroutines, futures, thread po
    - Write resolvers that operate on collections, not single-row lookups in loops
 
 **What to expect:**
-- **Indexed point lookup** in same AZ: typically **0.5–3 ms**
-- **Bad full-table scan**: **10–1000 ms** depending on data size
+- **Indexed point lookup** in same AZ: typically **0.5-3 ms**
+- **Bad full-table scan**: **10-1000 ms** depending on data size
 - Fixing indexes / N+1 routinely takes endpoints from **hundreds of ms down to tens of ms**
 
 #### Problem 4: Synchronous Observability and Third-Party Calls
@@ -344,8 +344,8 @@ On the backend (Go, Java, etc.), do the same with goroutines, futures, thread po
    - Only keep sync those calls that absolutely must block (e.g., payment authorization)
 
 **What to expect:**
-- Removing synchronous observability often saves **10–50 ms** per request
-- Removing synchronous third-party calls can save **50–300+ ms** per call, plus remove tail-latency spikes when those services are slow
+- Removing synchronous observability often saves **10-50 ms** per request
+- Removing synchronous third-party calls can save **50-300+ ms** per call, plus remove tail-latency spikes when those services are slow
 
 #### Problem 5: Too Many Fine-Grained HTTP Calls from the Frontend
 
@@ -366,13 +366,13 @@ Even with HTTP/2, each has its own server processing, auth, and potential DB que
 - Or use **GraphQL** (or similar) to request a tailored data shape from one endpoint, with optimized resolvers
 
 **What to expect:**
-- Fewer round-trips to your backend
-- More importantly: you can **optimize the backend implementation once** (e.g., single set of DB queries)
-- In practice, merging 5–10 small endpoints into 1–2 well-designed ones can save **50–150 ms** on complex pages and dramatically reduce load on the backend
+- Fewer round-trips to the backend
+- More importantly: the backend implementation can be **optimized once** (e.g., single set of DB queries)
+- In practice, merging 5-10 small endpoints into 1-2 well-designed ones can save **50-150 ms** on complex pages and dramatically reduce load on the backend
 
 ### Phase 6: HTTP Response and Compression
 
-The server sends the response back:
+The server sends the response back.
 
 ```http
 HTTP/2 200 OK
@@ -390,19 +390,19 @@ This takes **another half RTT** (one-way travel time) plus transmission time for
 Compression trades CPU for fewer bytes.
 
 **Compress:**
-- JSON, HTML, CSS, JS bundles, text > ~1–2 KB
+- JSON, HTML, CSS, JS bundles, text > ~1-2 KB
 - Anything that is repetitive and textual
 
 **Do NOT compress (or get minimal benefit):**
 - JPEG/PNG/WebP images, video (already compressed)
-- Small JSON (&lt;1 KB)—CPU overhead + buffering delay can dominate
+- Small JSON (&lt;1 KB): CPU overhead + buffering delay can dominate
 
 **Latency gotcha:**
 - Gzip/Brotli typically buffer data before emitting compressed output
 - For streaming responses, over-aggressive compression can delay first bytes (TTFB)
 - On server:
   - For big JSON responses (100 KB+), compression is usually a net win
-  - For lots of tiny responses, consider `gzip` instead of `brotli` (less CPU) or no compression for bodies < X bytes
+  - For lots of tiny responses, prefer `gzip` over `brotli` (less CPU) or skip compression for bodies < X bytes
 
 **Compression impact on 3G (400 Kbps):**
 ```
@@ -414,7 +414,7 @@ Brotli (6.5KB): → 130 ms transmission
 **Simple fix:**
 - Enable **gzip or brotli compression** (brotli is 15-20% better than gzip)
 - Design APIs to return only requested fields (GraphQL, or REST with field selection)
-- Consider **binary formats** for high-throughput APIs (Protobuf, CBOR, MessagePack)—can be 5x smaller
+- Consider **binary formats** for high-throughput APIs (Protobuf, CBOR, MessagePack); these can be 5x smaller
 
 ### Phase 7: Browser Processing (10-100ms)
 
@@ -431,6 +431,8 @@ Finally, the browser processes the response:
 
 `JSON.parse()` on a 5MB response can take 200ms on a mid-range phone, blocking the main thread.
 
+
+
 **Simple fix:**
 - Use **streaming JSON parsers** for large responses
 - Parse and process data in **Web Workers** to avoid blocking the UI
@@ -443,7 +445,7 @@ Finally, the browser processes the response:
 
 ## The Full Latency Budget
 
-Let's calculate the total time for a typical browser request from NYC to us-east-1 (20ms RTT):
+Total time for a typical browser request from NYC to us-east-1 (20ms RTT):
 
 | Phase | Optimized | With Footguns |
 |-------|-----------|---------------|
@@ -451,12 +453,12 @@ Let's calculate the total time for a typical browser request from NYC to us-east
 | TCP handshake | 0ms (reused) | 20ms |
 | TLS handshake | 0ms (reused) | 40ms (TLS 1.2) |
 | HTTP request | 10ms | 10ms |
-| Server: Cross-region DB call | — | +75ms |
+| Server: Cross-region DB call | - | +75ms |
 | Server: Sequential I/O (3 calls) | 40ms (parallel) | 120ms (serial) |
-| Server: Unindexed query | — | +200ms |
-| Server: Sync observability | — | +30ms |
+| Server: Unindexed query | - | +200ms |
+| Server: Sync observability | - | +30ms |
 | HTTP response (10KB compressed) | 10ms | 10ms |
-| HTTP response (50KB uncompressed) | — | +100ms (3G) |
+| HTTP response (50KB uncompressed) | - | +100ms (3G) |
 | Browser parsing | 15ms | 15ms |
 | **Total** | **75ms** | **670ms** |
 
@@ -466,7 +468,7 @@ Let's calculate the total time for a typical browser request from NYC to us-east
 - 300-1000ms: Noticeable lag
 - \> 1000ms: Frustrating
 
-The optimized version feels instant. The footgun version is painfully slow—**9× worse**.
+The optimized version feels instant. The footgun version is painfully slow (**9× worse**).
 
 ## REST vs gRPC vs GraphQL: Latency Characteristics
 
@@ -482,8 +484,8 @@ The optimized version feels instant. The footgun version is painfully slow—**9
 
 **When is REST fine?**
 Almost always, unless:
-- You need thousands of QPS with very small messages and want to shave every byte
-- You need strong typing and streaming semantics
+- Thousands of QPS with very small messages where every byte counts
+- Strong typing and streaming semantics are required
 
 ### gRPC
 
@@ -504,7 +506,7 @@ Almost always, unless:
 
 ### GraphQL
 
-GraphQL is not a transport—it's typically HTTP/JSON or WebSockets/JSON.
+GraphQL is not a transport. It's typically HTTP/JSON or WebSockets/JSON.
 
 **Pros:**
 - One endpoint, flexible query shapes
@@ -518,14 +520,14 @@ GraphQL is not a transport—it's typically HTTP/JSON or WebSockets/JSON.
 - Complex queries can blow up server time if not constrained
 
 **GraphQL helps latency when:**
-You're currently making multiple REST calls from the UI, and GraphQL lets you fold them into a single, well-optimized backend query.
+The UI currently makes multiple REST calls and GraphQL folds them into a single, well-optimized backend query.
 
 **GraphQL hurts latency when:**
-You allow arbitrary queries, don't batch/optimize resolvers, and end up doing many DB calls.
+Arbitrary queries are allowed, resolvers aren't batched or optimized, and the backend ends up doing many DB calls.
 
 ### Multiple Requests vs Fewer
 
-- **HTTP/1.1:** Multiple REST calls really do hurt—each might queue behind others per connection
+- **HTTP/1.1:** Multiple REST calls really do hurt; each might queue behind others per connection
 - **HTTP/2+:** Multiple requests are fine so long as backend can handle them
 
 Network-wise, fewer larger responses are often better than many tiny ones. But it's easy to over-aggregate: one monster endpoint becomes a performance bottleneck and is hard to cache.
@@ -565,25 +567,25 @@ Network-wise, fewer larger responses are often better than many tiny ones. But i
 
 **Footguns:**
 - Compression and streaming: Some setups buffer too much data before emitting compressed chunks → you lose early TTFB advantage
-- Backpressure: If consumer is slow, you must either buffer (memory), drop messages, or apply backpressure to producer
+- Backpressure: If consumer is slow, the choices are buffer (memory), drop messages, or apply backpressure to producer
 
 ## Theoretical Minimum Latency
 
 ### Speed-of-Light + Protocol Overhead
 
 Rough numbers, user in NYC:
-- To us-east-1: **~10–20 ms** RTT
-- To us-west-2: **~60–80 ms** RTT
-- To EU: **~70–100 ms** RTT
+- To us-east-1: **~10-20 ms** RTT
+- To us-west-2: **~60-80 ms** RTT
+- To EU: **~70-100 ms** RTT
 
 **Minimum for a single REST call over HTTPS with a new connection:**
 - TCP handshake: 1 RTT
 - TLS handshake: 1 RTT (TLS 1.3)
 - Request + response: 1 RTT
-- **Total: ~3 RTT = 30–60 ms** (best case, us-east-1)
+- **Total: ~3 RTT = 30-60 ms** (best case, us-east-1)
 
 **With connection reuse:**
-- You only pay the data RTT: **~10–20 ms**
+- Only the data RTT remains: **~10-20 ms**
 
 **With edge close to user:**
 - RTT can drop to **&lt;10 ms** in some geos
@@ -594,20 +596,20 @@ Approximate per-request overhead, same region, warm TCP/TLS and HTTP/2/3 connect
 
 | Mode | Extra overhead vs raw TCP | Typical per-message RTT |
 |------|---------------------------|-------------------------|
-| Raw TCP | Baseline | ~RTT (10–20 ms) |
-| HTTP/2 REST | + headers, parsing | RTT + 1–5 ms server |
+| Raw TCP | Baseline | ~RTT (10-20 ms) |
+| HTTP/2 REST | + headers, parsing | RTT + 1-5 ms server |
 | gRPC unary | Slightly less payload | Similar to REST, sometimes a few ms less CPU |
 | WebSocket message | Very small frame overhead | RTT + (sub-ms to few ms) |
-| gRPC/WebSocket streaming | Only server send | ≈ 0.5–1 RTT (10–20 ms) |
+| gRPC/WebSocket streaming | Only server send | ≈ 0.5-1 RTT (10-20 ms) |
 
 Once you have a live stream, server-pushed updates are ~one-way latency, not request+response.
 
-## Where You Most Commonly Double Latency
+## Where Latency Most Commonly Doubles
 
-Here are the top ways people accidentally 2–10× their latency:
+The top ways people accidentally 2-10× their latency:
 
 1. **Not reusing connections**: No keep-alive → every request pays TCP+TLS
-2. **Cross-region topology**: App/DB/services spread across regions (easy extra 50–150 ms hops)
+2. **Cross-region topology**: App/DB/services spread across regions (easy extra 50-150 ms hops)
 3. **Sequential work instead of parallel**: Multiple DB queries and service calls done one after another
 4. **Unindexed DB queries / N+1 patterns**: Full scans and many small queries
 5. **Synchronous observability and third-party calls**: Logging/metrics/tracing or external APIs on the hot path
@@ -615,32 +617,32 @@ Here are the top ways people accidentally 2–10× their latency:
 
 ## Decision-Making Framework
 
-Not every optimization is worth it. Here's the order of operations if you care about latency:
+Not every optimization is worth it. The order of operations for latency-sensitive work:
 
 ### 1. Co-locate services and DBs in the same region/AZ
-**Impact:** Saves 50–150 ms per cross-region hop avoided
+**Impact:** Saves 50-150 ms per cross-region hop avoided
 
 ### 2. Reuse connections (keep-alive, HTTP/2/3)
-**Impact:** Eliminates repeated TCP+TLS handshakes (saves 20–40+ ms per request)
+**Impact:** Eliminates repeated TCP+TLS handshakes (saves 20-40+ ms per request)
 
 ### 3. Eliminate cross-region and synchronous third-party calls in hot path
-**Impact:** Saves 50–300+ ms per synchronous external call
+**Impact:** Saves 50-300+ ms per synchronous external call
 
 ### 4. Parallelize independent work
-**Impact:** Often saves 50–150 ms when moving from serial to parallel I/O
+**Impact:** Often saves 50-150 ms when moving from serial to parallel I/O
 
 ### 5. Fix DB indexing / N+1
 **Impact:** Can reduce query time from hundreds of ms to single-digit ms
 
 ### 6. Reduce number of endpoints per page
-**Impact:** Saves 50–150 ms on complex pages
+**Impact:** Saves 50-150 ms on complex pages
 
 ### 7. Enable compression
-**Impact:** Reduces transmission time by 70–90% on text payloads
+**Impact:** Reduces transmission time by 70-90% on text payloads
 
 ### Only After All That...
 
-...would you start thinking about:
+...does it make sense to start thinking about:
 - Placement groups
 - Kernel tuning
 - Really low-level network tricks
@@ -649,7 +651,7 @@ Not every optimization is worth it. Here's the order of operations if you care a
 
 These are only worth it for HFT, real-time audio/video at scale, or very high QPS low-latency systems.
 
-## Measuring Your Actual Latency
+## Measuring Actual Latency
 
 Don't guess. Measure:
 
@@ -657,16 +659,16 @@ Don't guess. Measure:
 2. **Real User Monitoring (RUM)**: Tools like DataDog, New Relic, or simple `performance.timing` APIs
 3. **Synthetic Monitoring**: Test from different geos (WebPageTest, Pingdom)
 
-Focus on **P95 latency** (95th percentile), not averages. If P95 is 2 seconds, 5% of your users have a terrible experience.
+Focus on **P95 latency** (95th percentile), not averages. If P95 is 2 seconds, 5% of users have a terrible experience.
 
 ## Summary: The Biggest Wins
 
-If you only fix three things:
+If only three things get fixed:
 
-1. **Co-locate your app and DB in the same region (ideally same AZ)**: Saves 50–150 ms per avoided cross-region hop
-2. **Reuse connections** (HTTP/2 + keep-alive): Saves 20–40+ ms by eliminating repeated handshakes
-3. **Parallelize independent work**: Saves 50–150 ms by not waiting for serial I/O
+1. **Co-locate the app and DB in the same region (ideally same AZ)**: Saves 50-150 ms per avoided cross-region hop
+2. **Reuse connections** (HTTP/2 + keep-alive): Saves 20-40+ ms by eliminating repeated handshakes
+3. **Parallelize independent work**: Saves 50-150 ms by not waiting for serial I/O
 
-These three changes alone often **halve your API latency** for most users.
+These three changes alone often **halve API latency** for most users.
 
-Latency isn't a single number—it's a stack of decisions. Each phase compounds. Know where your time is going, fix the biggest offenders first, and measure the impact.
+Latency is a stack of decisions, not a single number. Each phase compounds. Know where the time is going, fix the biggest offenders first, and measure the impact.

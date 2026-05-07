@@ -1,0 +1,70 @@
+---
+title: "MVC for React, Without the React Engine in the Way"
+description: "Why complex React apps benefit from moving state out of the renderer entirely, and how per-feature Zustand stores restore a real separation of concerns."
+date: "May 2026"
+keywords: "React, Zustand, State Management, MVC, Architecture, Testing, Hooks"
+labels: ["Engineering", "Learnings"]
+featured: false
+draft: true
+---
+
+## React State Is Fine, Until It Isn't
+
+`useState` and `useReducer` are excellent for local, contained state. A toggle, a hover, a controlled input. For anything where the state lives and dies with the component, the React primitives are the right answer and adding a store is overkill.
+
+The problem starts when state has to coordinate across more than one component, when derivations depend on multiple inputs, or when the same piece of state is read by a panel, an editor, a dialog, and a sidebar. At that point the React idioms force you into prop drilling, context providers, and effect chains that exist only to keep things in sync. The renderer becomes a participant in business logic it shouldn't be aware of.
+
+This is where the familiar pathologies show up: stale closures, infinite re-render loops, `useCallback` and `useMemo` chains that exist purely to satisfy dependency arrays, and a debugger that surfaces React's reconciliation instead of your application's behavior. This is what you get when you ask a renderer to also be the source of truth.
+
+## The Layered Approach
+
+The way out is to put the source of truth somewhere the renderer can read but doesn't own. State lives in a plain JavaScript module. Components subscribe to the slices they need and render whatever those slices currently are. User interactions call actions on the module; actions update state; subscribers re-render against the new state. The renderer becomes a projection of the model.
+
+This is what MVC originally meant. The model is the data and the rules that govern it. The view is a function of the model. The controller is the set of actions that mutate the model in response to events. The reason "MVC" became a contested term in frontend is that frameworks kept conflating the three. Putting the model back outside the renderer is what the layered approach restores.
+
+We adopted Zustand for this, with one caveat: we don't have a single global store. We have multiple per-feature stores. `auth`, `theme`, `feature-1-editor`, `feature-2-filters`, each owning its own state and actions. Each store is a plain module, and each gets unit-tested independently before any component renders.
+
+## Per-Feature Stores, Not One Global Store
+
+The temptation with any state library is to make a single global store. That recreates the original problem at a different layer. You get a god object that every test has to mock, every feature has to read, and no one can refactor without touching everything.
+
+Per-feature stores keep blast radius small. The auth store knows about sessions and permissions, nothing else. The editor store for a given feature knows about its tabs, dirty state, and active selection, nothing else. Tests for one store don't pull in the others. Features can be deleted by deleting their directory.
+
+There is a secondary benefit that has become important in an AI-assisted workflow: colocated stores give the agent a tighter context window. When a store, its actions, and its consumers all live in the same feature directory, the agent doesn't have to traverse the codebase to understand what a change implies. Locality is legibility.
+
+## Testing the Model Without the Renderer
+
+The most concrete payoff: complex interaction logic can be tested as plain functions on plain data.
+
+A store's actions are JavaScript functions over JavaScript data. Take a permissions editor with a draft policy, a dirty flag, an undo stack, and a set of validation errors derived from the current draft. Calling `store.applyRule(rule)` and asserting on the resulting `draft`, `isDirty`, `errors`, and `canUndo` values is a unit test that runs in milliseconds and never touches the DOM. State machines that previously required Storybook stories or full component tests collapse to a few lines of Vitest. The combinatorial space of "what happens when the user does A then B then C" becomes enumerable in code instead of something you discover during a manual QA pass.
+
+This is the part that changes how you write features. Once interaction logic is testable without rendering, you stop writing it inside components. You write it in the store, prove it works, then wire components to read it. The components shrink. The bugs migrate out of the renderer because the logic that produced them is no longer there.
+
+## The Renderer Becomes Swappable
+
+Once the model lives outside React, the renderer is a thought experiment away from being interchangeable. Components are thin readers of store state and emitters of store actions, and any framework that can subscribe to a JS module could in principle take React's place. Migrating the same product to Solid, Svelte, or even Angular would mostly be a rewrite of the view layer, with the model and its tests carrying over verbatim.
+
+I find this clarifying even when I have no intention of leaving React. The stores have no React imports, no DOM dependencies, and the tests are pure JavaScript. The most fragile part of the app, the part most likely to be edited under deadline pressure, sits behind a boundary the renderer cannot cross. The daily payoff is that the parts of the app most likely to contain bugs are tested in isolation from the part of the system most likely to obscure them.
+
+## What This Replaces in Practice
+
+The patterns this displaces, in order of how much pain they were causing:
+
+- **Prop drilling for cross-component coordination.** A panel and a dialog both need to know which row is selected. Lifting state to the nearest common ancestor pushes that state through five components that don't care. A store removes the chain.
+- **Context providers as state containers.** Context is a delivery mechanism. Using it as a state container tends to cause every consumer to re-render on any change. Zustand's selector subscription model means a component re-renders only when the slice it reads changes.
+- **`useCallback` and `useMemo` chains to stabilize references.** Most of these exist because a child's effect depends on a callback whose identity changes every render. Move the callback into the store and the problem disappears, because the store's actions have stable identity by construction.
+- **Forms-as-state across many components.** Form state belongs in a form library (we use React Hook Form with Zod). Anything that isn't form state but was being modeled as one belongs in a store.
+
+React's primitives were never designed to manage state for complex apps, and most of the pain comes from pretending they were.
+
+## When To Reach For This
+
+The honest heuristic: if you find yourself writing a `useEffect` to keep two pieces of state in sync, or a context provider whose only job is to hold state for descendants, you are at the point where moving the state out of the renderer pays for itself.
+
+For a counter, a dropdown, or a small form, `useState` is correct and a store is bureaucracy. For a feature with multiple coordinated panels, dirty state, undo, or any non-trivial state machine, the layered model is the better fit. The cost is one file per feature; the payoff is that the tests cover the thing that actually breaks.
+
+## The Point
+
+React's renderer is excellent at projecting state into a DOM. Treating it as a state container for complex applications is the source of most of the "React is hard" pain that experienced engineers describe.
+
+Moving state out of the renderer lets the renderer do what it's good at, lets the model do what it's good at, and gives you a clean test boundary between the two. That separation is what MVC was supposed to be about, and it's worth recovering.

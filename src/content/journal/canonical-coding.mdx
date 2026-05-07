@@ -10,11 +10,11 @@ draft: true
 
 ## How Opinionated Conventions Eliminate Cognitive Overload and Unlock Velocity
 
-React's power comes from its lack of prescription. But a flexible ecosystem without constraints invites fractal decision-making: too many legitimate ways to structure state, variations in folder hierarchies and naming patterns, inconsistent component boundaries, inlined types in one file and shared interfaces in another, redundant wrapper components that multiply DOM layers, and multiple ways to implement data fetching—especially in Next.js with Server Components, Client Components, and layouts.
+React's power comes from its lack of prescription. But a flexible ecosystem without constraints invites fractal decision-making: too many legitimate ways to structure state, variations in folder hierarchies and naming patterns, inconsistent component boundaries, inlined types in one file and shared interfaces in another, redundant wrapper components that multiply DOM layers, and multiple ways to implement data fetching, especially in Next.js with Server Components, Client Components, and layouts.
 
 This results in **cognitive overload**: the mental tax every new contributor pays to understand the codebase before making safe changes.
 
-Most "bugs" in React codebases are not about logical mistakes—they stem from **inconsistent patterns** and **structural ambiguity**.
+Most "bugs" in React codebases stem from **inconsistent patterns** and **structural ambiguity**, far more than from logical mistakes.
 
 ## The Thesis: Canonical Conventions Are a Force Multiplier
 
@@ -36,16 +36,16 @@ This is the "canonical React" mindset: a codebase where *style rules indirectly 
 
 ## Convention as a Code Quality Guarantee
 
-Style rules—if chosen well—are not cosmetic. They become invariants that **mathematically reduce the space of possible bugs**.
+Style rules, chosen well, become invariants that **mathematically reduce the space of possible bugs**.
 
 **A critical caveat:** Conventions should only prescribe choices between **strictly equivalent implementations** where one has clear redundancy or bug risk. Never enforce conventions that limit product capabilities or create implementation gaps.
 
 For example:
-- **Good convention**: "No redundant wrapper divs" — the wrapper provides no value and adds noise
-- **Good convention**: "No inline types for shared shapes" — inline types create duplication and refactoring hazards
-- **Bad convention**: "All forms must use library X" — if library X can't handle a legitimate product requirement, the convention blocks progress
+- **Good convention**: "No redundant wrapper divs" because the wrapper provides no value and adds noise
+- **Good convention**: "No inline types for shared shapes" because inline types create duplication and refactoring hazards
+- **Bad convention**: "All forms must use library X" because if library X can't handle a legitimate product requirement, the convention blocks progress
 
-The rule: **if a convention prevents solving a real problem, it's not a convention—it's a constraint**. Canonical codebases eliminate objectively worse patterns, not legitimate architectural choices.
+The rule: **if a convention prevents solving a real problem, it has become a constraint rather than a convention**. Canonical codebases eliminate objectively worse patterns, not legitimate architectural choices.
 
 ### Rule 1: Hoist derived and non-shared state as low in the tree as possible
 
@@ -56,7 +56,7 @@ The rule: **if a convention prevents solving a real problem, it's not a conventi
 - Prevents prop-drilling and accidental coupling
 - Guarantees React's rendering model is used efficiently
 
-This is not stylistic; it is a **performance guarantee** and a **mental model guarantee**.
+This is a **performance guarantee** and a **mental model guarantee**.
 
 ### Rule 2: No redundant nesting
 
@@ -112,7 +112,7 @@ This reduces onboarding time, PR review time, and context-switch cost. It also m
 
 This is the forward-looking argument that many teams **haven't internalized yet**.
 
-### Large files, inline types, and redundant DOM nodes don't just slow *humans* down. They slow **AI assistants** down.
+### Large files, inline types, and redundant DOM nodes don't just slow *humans* down. They slow **AI assistants** down too.
 
 **Why?**
 
@@ -133,9 +133,9 @@ This is the forward-looking argument that many teams **haven't internalized yet*
 
 ### Put simply:
 
-**The cleaner the architecture, the more potent your AI becomes.**
+**The cleaner the architecture, the more potent the AI becomes.**
 
-You're not just optimizing for humans—you're optimizing for the future of software development.
+The optimization target is humans and the future of software development.
 
 ## Developer Velocity: The Real Output
 
@@ -146,11 +146,11 @@ Conventions improve velocity in four concrete ways:
 3. **Smaller, focused files** mean faster reviews and more confident refactors
 4. **AI-optimized structure** multiplies the output of every engineer using LLM-powered toolchains
 
-Velocity isn't about coding faster; it's about **removing friction** from every step of the loop.
+Velocity comes from **removing friction** at every step of the loop.
 
 ## Canonical React/Next.js as a Write-Once, Read-Many System
 
-A codebase is read far more than it is written. And now it's not just read by humans—it's read by models.
+A codebase is read far more than it is written. And now it's read by models in addition to humans.
 
 Thus:
 
@@ -159,44 +159,44 @@ Thus:
 - Structure is a debugging tool
 - Rigid rules are a scaffolding that enables velocity
 
-## Why My Code Reviews Are Systemized—and Why That Matters
+## Why My Code Reviews Are Systemized, and Why That Matters
 
 A core pillar of a canonical, convention-driven React/Next.js codebase is that **review energy should be spent on design decisions, not syntax checks**. My review approach is built on this principle. It is highly systemized for one reason: I wrote most of the architectural systems, implemented the same interfaces repeatedly, and established a set of patterns where the typechecker provides extremely strong correctness guarantees.
 
 This leads to an important operational behavior:
 
-**When I review code built on established interfaces, I skim large, dense configuration objects without reading them line-by-line.**
+**Code built on established interfaces gets skimmed, with large dense configuration objects passing review without line-by-line reading.**
 
-Not because I'm complacent—but because these interfaces were designed to be unbreakable. When a component schema is tight, strongly typed, and built through repeated iterations, the compiler becomes the primary reviewer. The fields are deterministic. There is no room for "creative interpretation," so it is purely mechanical data entry. If it compiles, it is nearly always correct.
+These interfaces were designed to be unbreakable. When a component schema is tight, strongly typed, and built through repeated iterations, the compiler becomes the primary reviewer. The fields are deterministic. There is no room for "creative interpretation," so it is purely mechanical data entry. If it compiles, it is nearly always correct.
 
-Large config blocks in this world are not complexity—they are *templates being filled out*. The type system has already eliminated the possibility of structural misuse. This is exactly what conventions buy: the ability to trust the system rather than re-mentally simulate logic.
+Large config blocks in this world are *templates being filled out*. The type system has already eliminated the possibility of structural misuse. This is exactly what conventions buy: the ability to trust the system rather than re-mentally simulate logic.
 
 The inverse is also true.
 
-**When I see bespoke, novel code, I switch into a different mode—reviewing for correctness, simplicity, clarity, safety, and potential bugs.**
+**Bespoke, novel code triggers a different mode, reviewing for correctness, simplicity, clarity, safety, and potential bugs.**
 
 Novel code is where deviation hides, and deviation is where errors hide. But then the next question naturally arises:
 
-**Why did I have to review this at all?**
+**Why did this need a review at all?**
 
-Whenever I review something that required a human to intervene, my immediate reflex is to ask:
+Anything that required a human to intervene prompts the reflex questions:
 
 - What rule could have prevented this?
 - What pattern should have existed already?
 - What linting constraint would have caught this 90% of the time?
 - Why was this custom logic required, rather than leaning on existing abstractions?
 
-The goal isn't to restrict the team—it's to remove future failure modes and eliminate wasted cognitive effort. Custom logic is not inherently bad, but it demands justification in a canonical system. Every repeated category of issue becomes a candidate for a lint rule or structural constraint. The end state is a codebase where **the right thing is the easy thing**, and reviewers rarely encounter surprises.
+The goal is to remove future failure modes and eliminate wasted cognitive effort. Custom logic demands justification in a canonical system. Every repeated category of issue becomes a candidate for a lint rule or structural constraint. The end state is a codebase where **the right thing is the easy thing**, and reviewers rarely encounter surprises.
 
 ## UX-Backed Decisions: Why Rules Aren't Arbitrary
 
-All of my architectural decisions, and thus all of my review comments, are grounded in product UX logic—not aesthetic preference. Good engineering conventions are downstream of UX clarity.
+All of my architectural decisions, and thus all of my review comments, are grounded in product UX logic rather than aesthetic preference. Good engineering conventions are downstream of UX clarity.
 
 **For example:**
 
 - A UI-level configuration constant that changes often (e.g., tuning a speed, threshold, size, animation, or weight) should be **hoisted to a high-level config** so product teams can adjust it without spelunking through code.
 
-- But a static piece of implementation—such as a route, a semantic label, or a one-off link—**should never be a magic variable**. Indirection here destroys clarity. You create complexity for no benefit. You conceal that the value is a stable part of the component itself.
+- But a static piece of implementation (such as a route, a semantic label, or a one-off link) **should never be a magic variable**. Indirection here destroys clarity. It creates complexity for no benefit, concealing that the value is a stable part of the component itself.
 
 Indirection is not neutral. It is an active increase in cognitive distance. A canonical system optimizes that distance relentlessly.
 
@@ -208,11 +208,11 @@ Bus factor collapses to zero because every component follows the same rules, eve
 
 The final, often invisible benefit:
 
-**Once conventions are rigid and the linting rules are decisive, authors see every comment I would make *before* I ever make it.**
+**Once conventions are rigid and the linting rules are decisive, authors see every comment a reviewer would make *before* it ever gets made.**
 
 This is the cultural flywheel: the more systemized the codebase is, the more predictable the review comments become, and the more preemptively the author corrects their code.
 
-By the time a PR hits my desk:
+By the time a PR reaches review:
 
 - Most low-level issues are already auto-corrected
 - Most architectural missteps are prevented by conventions
@@ -223,15 +223,15 @@ This lets reviewers focus on meaningful work instead of static analysis by hand.
 
 ## The Vacation Test: When the System Writes Code Like You
 
-Here's my ideal heuristic for a truly canonical codebase:
+The ideal heuristic for a truly canonical codebase:
 
-**If I went on vacation for a week and someone else had to write frontend code—manually or with AI—the systems in place would guarantee it looks exactly like code I would write.**
+**If the lead engineer went on vacation for a week and someone else had to write frontend code (manually or with AI) the systems in place would guarantee it looks exactly like code that engineer would write.**
 
 Not "similar to." Not "in the spirit of." **Exactly like.**
 
-This is not about ego. It's about **knowledge codification**. Every architectural decision I've made, every pattern I've established, every edge case I've encountered—all of it should be encoded into the repository itself, not trapped in my head.
+This is **knowledge codification**. Every architectural decision, every pattern, every edge case: all of it should be encoded into the repository itself, not trapped in any one head.
 
-The goal is to build a system where:
+The goal is a system where:
 
 ### 1. Prompt files and agent rules live in the repository
 
@@ -244,7 +244,7 @@ The `.claude/` directory (or equivalent) contains:
 
 When an AI assistant opens the codebase, it reads these rules first. When a human onboards, they have the same source of truth.
 
-These aren't documentation—they're **executable knowledge**. They tell AI assistants exactly how to write code that passes review.
+These are **executable knowledge**. They tell AI assistants exactly how to write code that passes review.
 
 ### 2. Agentic CI checks enforce the knowledge base
 
@@ -255,24 +255,24 @@ Traditional CI runs tests and linters. Agentic CI goes further:
 - **Type consistency**: Are all types placed in their canonical locations?
 - **Architectural review**: Does this change introduce new abstractions when existing ones should be used?
 
-These checks aren't static rules—they're **AI agents that understand context**. They can explain *why* a pattern is wrong and *how* to fix it. They can point to similar correct examples in the codebase.
+These checks are **AI agents that understand context** in ways static rules cannot. They can explain *why* a pattern is wrong and *how* to fix it. They can point to similar correct examples in the codebase.
 
-When a check fails, it doesn't just block the PR—it teaches the contributor.
+When a check fails, it teaches the contributor as well as blocking the PR.
 
 ### 3. Zero knowledge transfer overhead
 
-The most expensive thing in software engineering isn't writing code—it's **transferring knowledge**.
+The most expensive thing in software engineering is **transferring knowledge**.
 
-Every time I explain why we structure components a certain way, that's time lost. Every code review comment that says "we don't do it this way, we do it this way"—that's knowledge I'm transmitting manually.
+Every explanation of why components are structured a certain way is time lost. Every code review comment that says "we don't do it this way, we do it this way" is knowledge being transmitted manually.
 
-In a truly canonical system, I codify that knowledge **once**:
+In a truly canonical system, that knowledge gets codified **once**:
 
 - Write the lint rule
 - Add the CI check
 - Update the prompt file
 - Add an example to the repository
 
-Now that knowledge is **permanently encoded**. The next person—human or AI—learns it automatically by trying to violate it and being corrected by the system.
+Now that knowledge is **permanently encoded**. The next person (human or AI) learns it automatically by trying to violate it and being corrected by the system.
 
 ### 4. The codebase becomes a self-teaching machine
 
@@ -283,7 +283,7 @@ This is the ultimate goal: a codebase that actively teaches contributors how to 
 - Try to add a redundant wrapper → Autofix removes it
 - Try to use a non-standard pattern → AI agent shows the standard equivalent
 
-The system doesn't just enforce correctness—it **explains correctness**. Each interaction makes the contributor slightly better at writing canonical code.
+The system **explains correctness** while enforcing it. Each interaction makes the contributor slightly better at writing canonical code.
 
 After a week of working in this environment, contributors internalize the patterns. They stop triggering the checks because they've learned to think the way the system thinks.
 
@@ -293,12 +293,12 @@ This is where it gets interesting.
 
 When the conventions are rigid enough and the automation is comprehensive enough, something remarkable happens: **humans and AI produce identical code**.
 
-Not because humans are coding like machines—but because both are following the same canonical patterns, the same type signatures, the same folder structures, the same architectural principles.
+Both follow the same canonical patterns, the same type signatures, the same folder structures, the same architectural principles.
 
 A human writes a new component: it looks canonical.
 An AI generates the same component: it looks identical.
 
-This isn't loss of creativity—it's **creativity focused where it matters**. The structure is deterministic. The product logic is where humans add value.
+This is **creativity focused where it matters**. The structure is deterministic. The product logic is where humans add value.
 
 ### The vacation test as a design principle
 
@@ -308,23 +308,23 @@ This heuristic guides every architectural decision:
 - Should this be documented? *Only if the system can't enforce it automatically.*
 - Should this be a convention? *Only if violating it would look different from code I'd write.*
 
-The goal isn't perfection on day one. The goal is a **ratchet mechanism**: every time knowledge leaves my head and enters the system, it never has to leave my head again.
+The goal is a **ratchet mechanism** rather than perfection on day one: every piece of knowledge that leaves a human head and enters the system never has to be re-explained.
 
-Over time, the percentage of PRs that "look exactly like code I would write" approaches 100%—whether I'm on vacation, asleep, or working on something else entirely.
+Over time, the percentage of PRs that "look exactly like code the lead would write" approaches 100%, whether they're on vacation, asleep, or working on something else entirely.
 
-**This is the ultimate form of leverage**: your architectural knowledge, multiplied across every contributor, human or AI, forever.
+**This is the ultimate form of leverage**: architectural knowledge, multiplied across every contributor, human or AI, forever.
 
 ## Static Determinism Over AI Checks: The Performance Reality
 
-There's a critical nuance to the "agentic CI" vision that many teams miss: **AI should build the checks, not be the checks.**
+There's a critical nuance to the "agentic CI" vision that many teams miss: **AI should build the checks.**
 
 The technical reality is unavoidable: AI-based reviews and enforcement are inherently slow. Even at 0 temperature, token generation is orders of magnitude slower than code execution. An AI agent analyzing a PR takes seconds to minutes. A static linter checking the same patterns runs in milliseconds across hundreds of files.
 
 **Static determinism always wins on latency.**
 
-This isn't a temporary limitation—it's fundamental to how language models work. Every token must be generated sequentially. Every pattern must be reasoned about contextually. There's no way around the physics of inference.
+This is fundamental to how language models work. Every token must be generated sequentially. Every pattern must be reasoned about contextually. There's no way around the physics of inference.
 
-But here's where the real leverage appears: **AI doesn't need to run the checks. AI needs to write the checks.**
+The real leverage appears here: **AI's job is to write the checks.**
 
 ### The paradigm shift
 
@@ -352,7 +352,7 @@ This would take hours or days for a human. Most teams decided it wasn't worth it
 
 **Now an AI can write a GritQL pattern or custom Biome rule in minutes.**
 
-Suddenly the economics flip: if spending 10 minutes with AI to write a static check can prevent 1 hour of debugging over the next month, it's worth it. If that check catches 10 bugs over the next year, it's invaluable.
+Suddenly the economics flip: if 10 minutes with AI to write a static check prevents 1 hour of debugging over the next month, it's worth it. If that check catches 10 bugs over the next year, it's invaluable.
 
 ### The self-improving codebase flywheel
 
@@ -386,7 +386,7 @@ Consider the difference:
 
 The static check is **60-120x faster**. And it runs locally before commit, not asynchronously in CI.
 
-This isn't to say AI agents have no place in CI. They're perfect for:
+AI agents still have a place in CI. They're perfect for:
 
 - **Semantic review**: "Does this API design make sense?"
 - **Architecture validation**: "Does this feature fit the existing patterns?"
@@ -398,7 +398,7 @@ But for enforcing **known, repeatable patterns**, static checks win every time.
 
 Here's the crucial insight: **AI succeeds in highly abstract quality domains that resist formal specification.**
 
-Static rules can enforce "no inline types" or "max 3 levels of nesting." But they struggle with:
+Static rules can enforce "no inline types" or "max 3 levels of nesting." They struggle with:
 
 - **Readability**: "This function is hard to follow"
 - **Documentation quality**: "This explanation could be clearer"
@@ -412,14 +412,14 @@ These are subjective, qualitative judgments that require taste and context. They
 
 An AI reviewer can say: "This component is technically correct, but the logic flow is hard to follow. Consider extracting the data transformation into a named function to clarify intent."
 
-No linter can make that judgment. No static analysis can detect "this is hard to read" in a generalizable way. But AI—trained on millions of examples of good and bad code—develops intuition for these abstract qualities.
+No linter can make that judgment. No static analysis can detect "this is hard to read" in a generalizable way. AI, trained on millions of examples of good and bad code, develops intuition for these abstract qualities.
 
 The key is **separation of concerns**:
 
 - **Static checks**: Enforce the mechanically verifiable (structure, types, patterns)
 - **AI reviews**: Evaluate the qualitatively important (readability, clarity, aesthetics)
 
-When you try to use AI for both, you get slow feedback loops and non-deterministic enforcement. When you use each tool for its strength, you get instant mechanical correctness *and* thoughtful qualitative guidance.
+Using AI for both yields slow feedback loops and non-deterministic enforcement. Using each tool for its strength yields instant mechanical correctness *and* thoughtful qualitative guidance.
 
 ### AI in service of product decisions, guided by static determinism
 
@@ -457,7 +457,7 @@ After AI-assisted development:
 - Knowledge lives in executable rules
 - Bugs are caught in milliseconds, pre-commit
 
-**This is why canonical codebases are increasingly valuable**: each pattern you establish is a pattern AI can help you enforce statically, forever, at near-zero cost.
+**This is why canonical codebases are increasingly valuable**: each pattern established is one AI can help enforce statically, forever, at near-zero cost.
 
 The codebase becomes a self-improving system where every bug caught once becomes a rule that prevents it permanently.
 
@@ -465,15 +465,15 @@ The codebase becomes a self-improving system where every bug caught once becomes
 
 React's unopinionated nature is celebrated as a strength, but it comes with a hidden tax: **decision fatigue at every level of the stack**.
 
-When every team member can legitimately choose between five different approaches to the same problem, you don't get five times the innovation—you get five times the cognitive load. New engineers spend their first weeks not learning the domain, but decoding the archaeological layers of different patterns that emerged from different eras of the codebase.
+When every team member can legitimately choose between five different approaches to the same problem, the result isn't five times the innovation; it's five times the cognitive load. New engineers spend their first weeks not learning the domain, but decoding the archaeological layers of different patterns that emerged from different eras of the codebase.
 
-This is not a problem that better documentation can solve. Documentation describes the current state; it doesn't prevent future divergence. Only rigid conventions can do that.
+This is not a problem that better documentation can solve. Documentation describes the current state. Only rigid conventions prevent future divergence.
 
 ## Why Next.js Server Components Reinforce the Need for Consistency
 
 The introduction of Server Components, Server Actions, and the App Router in Next.js has paradoxically made consistency *more* important, not less.
 
-Now developers must decide not just *how* to fetch data, but *where*: Server Component, Client Component, Route Handler, Server Action, or middleware. Each choice has different implications for caching, revalidation, streaming, and user experience.
+Developers now must decide *how* to fetch data and *where*: Server Component, Client Component, Route Handler, Server Action, or middleware. Each choice has different implications for caching, revalidation, streaming, and user experience.
 
 Without canonical patterns, teams devolve into inconsistent approaches:
 
@@ -482,7 +482,7 @@ Without canonical patterns, teams devolve into inconsistent approaches:
 - Some rely on Route Handlers called from the client
 - Some use Server Actions for mutations
 
-Each approach works in isolation. But collectively, they create a codebase that's impossible to reason about holistically. Performance characteristics become unpredictable. Caching strategies conflict. Waterfall requests appear in surprising places.
+Each approach works in isolation. Collectively, they create a codebase that's impossible to reason about holistically. Performance characteristics become unpredictable. Caching strategies conflict. Waterfall requests appear in surprising places.
 
 **A canonical Next.js architecture establishes clear rules:**
 
@@ -491,7 +491,7 @@ Each approach works in isolation. But collectively, they create a codebase that'
 - Server Actions for mutations with built-in revalidation
 - Route Handlers exclusively for external API consumers
 
-These rules aren't restrictions—they're **decision elimination**. They collapse the search space from infinite to deterministic.
+These rules are **decision elimination**. They collapse the search space from infinite to deterministic.
 
 ## How Conventions Encode Institutional Knowledge
 
@@ -500,11 +500,11 @@ When a senior engineer leaves, they take two types of knowledge with them:
 1. **Explicit knowledge**: documented patterns, architectural decisions, design docs
 2. **Implicit knowledge**: the "feel" for what's right, the instinct for where bugs hide, the judgment calls that never made it into docs
 
-Traditional codebases lose the second type entirely. But canonical codebases *encode* implicit knowledge into the structure itself.
+Traditional codebases lose the second type entirely. Canonical codebases *encode* implicit knowledge into the structure itself.
 
-When the rule is "state lives at the lowest possible owner," you don't need to remember which engineer understood React's reconciliation deeply. The rule enforces the insight automatically.
+When the rule is "state lives at the lowest possible owner," there's no need to remember which engineer understood React's reconciliation deeply. The rule enforces the insight automatically.
 
-When the rule is "no inline types," you don't need tribal knowledge about which shapes are stable versus which are evolving. The structure forces explicit naming, which forces explicit thinking.
+When the rule is "no inline types," tribal knowledge about which shapes are stable versus evolving becomes unnecessary. The structure forces explicit naming, which forces explicit thinking.
 
 **This is the ultimate scale advantage:** junior engineers inherit senior judgment without needing to rediscover it.
 
@@ -512,28 +512,28 @@ When the rule is "no inline types," you don't need tribal knowledge about which 
 
 Cognitive psychology research on flow state consistently shows that **reducing decisions increases sustained focus**.
 
-Every architectural decision—no matter how small—pulls you out of implementation mode and into meta-reasoning mode. "Should this be a separate component? Should this type be inline or extracted? Should this file go in `components/` or `features/`?"
+Every architectural decision, no matter how small, pulls a developer out of implementation mode and into meta-reasoning mode. "Should this be a separate component? Should this type be inline or extracted? Should this file go in `components/` or `features/`?"
 
-None of these decisions are inherently hard. But each one is a context switch. Each one burns glucose. Each one reduces your capacity for the decisions that actually matter: the product logic, the edge cases, the user experience.
+None of these decisions are inherently hard. Each one is a context switch. Each one burns glucose. Each one reduces capacity for the decisions that actually matter: the product logic, the edge cases, the user experience.
 
-A canonical codebase eliminates these micro-decisions. You don't choose where the file goes—the convention tells you. You don't choose how to structure the component—the pattern is already established. You don't choose how to name the type—the naming convention is deterministic.
+A canonical codebase eliminates these micro-decisions. The file location is dictated by convention. The component structure follows an established pattern. The type name follows a deterministic naming convention.
 
-**This is why velocity increases so dramatically.** Not because developers type faster, but because they spend more time in flow state and less time in decision paralysis.
+**This is why velocity increases so dramatically.** Developers spend more time in flow state and less time in decision paralysis.
 
-## Why You Should Prefer More Files Over Longer Files
+## Why More Files Beat Longer Files
 
-A 2000-line component file is not a victory. It's a liability.
+A 2000-line component file is a liability.
 
-Long files optimize for the wrong thing: minimizing the number of imports. But imports are essentially free—they're compile-time, they're explicit, and they're greppable.
+Long files optimize for the wrong thing: minimizing the number of imports. Imports are essentially free; they're compile-time, they're explicit, and they're greppable.
 
-What's expensive is mental state. When you open a 2000-line file, you must:
+Mental state is what's expensive. Opening a 2000-line file requires:
 
-1. Scan to find the relevant section
-2. Understand what scope you're in
-3. Reason about side effects from distant code
-4. Avoid accidentally depending on private implementation details
+1. Scanning to find the relevant section
+2. Understanding the current scope
+3. Reasoning about side effects from distant code
+4. Avoiding accidental dependencies on private implementation details
 
-When you open a 200-line file, the entire file fits in your mental model at once.
+A 200-line file fits in working memory all at once.
 
 **Canonical rule: Files should be small enough to hold in working memory.**
 
@@ -546,7 +546,7 @@ This has second-order benefits:
 - **Clearer boundaries**: file structure becomes semantic architecture
 - **Faster AI reasoning**: models spend less time on irrelevant context
 
-More files isn't complexity. It's **explicitness**. And explicitness is the foundation of correctness.
+More files means **explicitness**, and explicitness is the foundation of correctness.
 
 ## How Decentralized Inline Types Sabotage Team-Level Understanding
 
@@ -569,13 +569,13 @@ function ComponentC(props: { record: { id: string; name: string } }) {
 }
 ```
 
-Three components, three inline types, three different parameter names—but the same semantic shape.
+Three components, three inline types, three different parameter names, all with the same semantic shape.
 
 **What's the cost?**
 
-1. **Searching is ambiguous.** Grep for `name: string` finds hundreds of matches. You can't locate all uses of this entity type.
+1. **Searching is ambiguous.** Grep for `name: string` finds hundreds of matches. There's no way to locate all uses of this entity type.
 
-2. **Refactoring is hazardous.** Adding a field requires touching every inline definition, and you'll inevitably miss one.
+2. **Refactoring is hazardous.** Adding a field requires touching every inline definition, and one will inevitably be missed.
 
 3. **Semantics are lost.** Is this a User? A Product? A Category? The shape doesn't say.
 
@@ -615,13 +615,13 @@ Now:
 
 **The rule: If a type appears more than once, it must be named and exported.**
 
-This isn't pedantry. It's an architectural guarantee that types reflect domain concepts, not implementation accidents.
+This is an architectural guarantee that types reflect domain concepts, not implementation accidents. It's far from pedantry.
 
 ## Why Minimal DOM Is the Mark of a Mature Engineering Team
 
-Novice React developers wrap everything in `<div>`s. It feels safe—an extra wrapper never breaks anything.
+Novice React developers wrap everything in `<div>`s. It feels safe: an extra wrapper never breaks anything.
 
-But each wrapper has costs:
+Each wrapper has costs:
 
 1. **Layout debugging becomes harder.** Flexbox and Grid work differently with intermediate containers.
 2. **Accessibility suffers.** Screen readers traverse unnecessary nesting.
@@ -634,7 +634,7 @@ But each wrapper has costs:
 - Does it position children? Then it's necessary.
 - Does it exist "just in case"? **Delete it.**
 
-Mature teams internalize this so deeply that their React components have nearly 1:1 correspondence with the semantic structure of the UI. There are no "wrapper divs." There are layout containers, content regions, and interactive elements—each with clear purpose.
+Mature teams internalize this so deeply that their React components have nearly 1:1 correspondence with the semantic structure of the UI. There are no "wrapper divs." Their components are layout containers, content regions, and interactive elements, each with clear purpose.
 
 This discipline pays dividends:
 
@@ -652,9 +652,9 @@ Traditionally, code quality optimizes for two audiences:
 1. **The compiler** (correctness)
 2. **Human maintainers** (readability)
 
-But there's now a third audience: **AI assistants**.
+There's now a third audience: **AI assistants**.
 
-This isn't hypothetical. If you use GitHub Copilot, Cursor, or Claude Code, your codebase is constantly being read by models that:
+This is already real. With GitHub Copilot, Cursor, or Claude Code in use, the codebase is constantly being read by models that:
 
 - Autocomplete based on surrounding context
 - Suggest refactors based on patterns
@@ -663,23 +663,23 @@ This isn't hypothetical. If you use GitHub Copilot, Cursor, or Claude Code, your
 
 These tools work exponentially better on canonical codebases. Here's why:
 
-**Predictable patterns compress well.** When every component follows the same structure, the model "learns" the pattern once and applies it everywhere. Inconsistent patterns require the model to re-learn from scratch for each file.
+**Predictable patterns compress well.** When every component follows the same structure, the model "learns" the pattern once and applies it everywhere. Inconsistent patterns force the model to re-learn from scratch for each file.
 
-**Explicit types eliminate ambiguity.** Inline types force the model to infer intent. Named types provide ground truth.
+**Explicit types eliminate ambiguity.** Named types provide ground truth where inline types force the model to infer intent.
 
-**Small files fit in context windows.** A 200-line file with clear boundaries is fully comprehensible. A 2000-line file forces the model to sample fragments.
+**Small files fit in context windows.** A 200-line file with clear boundaries is fully comprehensible. A 2000-line file makes the model sample fragments.
 
 **Minimal DOM reduces noise.** Every redundant wrapper is tokens the model must process without gaining information.
 
 **The insight: code quality is now a multi-player optimization.**
 
-You're not just writing for future humans. You're writing for the AI that will help future humans understand your code.
+The audience is future humans and the AI that will help those humans understand the code.
 
 Teams that ignore this are leaving velocity on the table. Teams that embrace it find their AI assistants become genuinely intelligent collaborators rather than glorified autocomplete.
 
 ## Practical Lint Rules That Enforce Correctness Through Structure
 
-Canonical codebases don't rely on human discipline—they rely on automation. Here are lint rules that enforce structural correctness:
+Canonical codebases rely on automation rather than human discipline. Here are lint rules that enforce structural correctness:
 
 ### 1. **No default exports**
 
@@ -746,11 +746,11 @@ const fullName = `${first} ${last}`;
 
 **Why:** Single Responsibility Principle at the file level. Easier to locate, test, and refactor.
 
-These rules aren't oppressive—they're **forcing functions** that prevent entire categories of bugs before they're written.
+These rules are **forcing functions** that prevent entire categories of bugs before they're written.
 
 ## How Consistent Patterns Unlock Reliable Automated Refactors
 
-The promise of automated refactoring tools has always been limited by ambiguity. How do you safely rename a prop when it's defined inline in 50 places?
+The promise of automated refactoring tools has always been limited by ambiguity. How does a tool safely rename a prop when it's defined inline in 50 places?
 
 Canonical codebases solve this by **eliminating structural ambiguity**.
 
@@ -769,7 +769,7 @@ In an ad-hoc codebase, this requires manually finding every usage and updating i
 3. Autofix generates correct defaults
 4. Tests catch edge cases
 
-The refactor is **mechanical, not intellectual**. This is the goal: reduce the human to a sanity-checker, not a manual laborer.
+The refactor is **mechanical**. This is the goal: reduce the human to a sanity-checker, not a manual laborer.
 
 As AI-powered refactoring tools mature, this advantage compounds. Models can safely apply transformations to canonical codebases that would be hazardous in inconsistent ones.
 
@@ -783,12 +783,12 @@ Teams that aggressively canonicalize React/Next.js will find themselves building
 
 **Correctness, performance, readability, and AI-friendliness all converge on the same set of architectural principles.**
 
-A canonical React/Next.js style guide isn't rigid—it's liberating. It transforms the codebase from a collection of files into a coherent system.
+A canonical React/Next.js style guide is liberating. It transforms the codebase from a collection of files into a coherent system.
 
-When every file looks familiar, every pattern is predictable, and every rule eliminates a category of bugs, what you're left with is not restriction—it's **creative freedom within a powerful framework**.
+When every file looks familiar, every pattern is predictable, and every rule eliminates a category of bugs, what's left is **creative freedom within a powerful framework**.
 
-The cognitive load you save on structure is cognitive load you can spend on product, on UX, on the problems that actually matter.
+The cognitive load saved on structure is cognitive load available for product, for UX, for the problems that actually matter.
 
-This is the future: codebases that are not just correct, but *canonically correct*. Where the right way is the obvious way. Where humans and AI collaborate fluently. Where velocity comes not from cutting corners, but from eliminating the corners entirely.
+This is the future: codebases that are *canonically correct*, going beyond merely correct. Where the right way is the obvious way. Where humans and AI collaborate fluently. Where velocity comes from eliminating the corners entirely.
 
 Build canonical systems. The returns compound forever.
