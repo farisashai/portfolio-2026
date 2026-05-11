@@ -1,0 +1,100 @@
+---
+title: "The Monorepo Is the Harness"
+description: "Agents shifted the constraint from implementation time to everything around it. A full monorepo with deterministic rules in CI is the only personalization that survives the next model."
+date: "May 2026"
+keywords: "Monorepo, AI, Agents, Codegen, CI, Linting, Architecture, Developer Experience"
+labels: ["Engineering", "Learnings"]
+featured: false
+draft: false
+---
+
+## Velocity Without the Tradeoffs
+
+Agentic tools moved development cycles by an order of magnitude, and the bottleneck moved with them. Implementation time stopped mattering. Everything around it started: keeping teams lean enough that velocity isn't spent on coordination, reviewing PRs that arrive faster than any human can read them, guaranteeing correctness at higher volume, and giving the agent enough context to make non-trivial calls. Each is a tax on velocity, and each is a question about the shape of the codebase. Most teams are paying these taxes with prompt files, memory entries, and ever-longer `CLAUDE.md` documents. None of those touch the layer where the problem actually lives.
+
+## What the Old Assumptions Counted On
+
+Codebases used to be designed for humans on long tenure who absorbed conventions over weeks, reviewed each other's work, and followed implicit patterns nobody bothered to enforce. None of that survives the new pace.
+
+Agents start every session cold. The model running today is different from the one two months ago, in a different harness, with different defaults. Review capacity saturates when the agent ships ten PRs in the time a teammate ships one. Pattern recognition is the dominant failure mode on anything non-trivial, which is exactly what implicit conventions rely on a reader having internalized. A new teammate would have run into those patterns three times in their first month and absorbed them by osmosis. The agent has no first month.
+
+Agents are excellent at implementation, prototyping, mechanical testing, and raw speed. They are goal-aligned and will take any shortcut available, which makes them dangerous when the guardrails are vague. Natural-language guardrails are always vague. Translating prose to code is lossy, and the precision required to forbid every shortcut without leaving holes is the precision required to write the code by hand. Short instructions are underspecified; specific ones are already the implementation. Anything a permissive system allows to go wrong eventually goes wrong, given enough volume.
+
+## One Repo, Every Surface
+
+A single monorepo covers every product surface: marketing site, authenticated console, internal tools, APIs, Temporal workers. Unified PRs cross every layer in one diff. Context is complete by default. CI runs full stack, so failure modes that used to need integration environments surface on every push.
+
+The clearest payoff is a frontend that stays live with the backend. When the Go schema for an API drifts, codegen runs in CI, the regenerated types break frontend typechecking, and every consumer of the changed shape lights up in the same PR. A product gap can't ship silently because the implementation is incomplete in a way the compiler refuses to accept. The same property extends to generated documentation, SDKs, and configuration. Everything an agent has to reason about lives in one place it can read end to end.
+
+## Deterministic Rules in the Repo
+
+The codebase has to carry the rules, and the linter is now one of the most powerful tools in it. A check that runs is the only kind of rule that survives a model change.
+
+PR review used to absorb the slack. Reviewers left nits, the next engineer internalized them, and the repo stayed maintainable through accumulated taste. Once nobody reviews line by line, the unenforced rules disappear and maintainability collapses in a quarter.
+
+The first instinct is to reach for prose. `CLAUDE.md`, `AGENTS.md`, cursorrules, Codex skills, Claude memories let you write conventions in English. They help a little and break in every way that matters. Guidance can be skipped, misread, or overruled by a stronger pattern in the surrounding code, and each model release shifts what the agent pays attention to. A check that runs on every commit doesn't depend on the agent reading anything correctly.
+
+Every error caught by an in-repo validation tool before a human enters the loop is a round of review that doesn't have to happen. The agent runs the same checks locally as part of its own loop, iterating against a red build until it goes green, so most of the corrections land before a human ever sees the PR. That's what lets one engineer run more background agents in parallel and spend the recovered time on the work that compounds.
+
+## Agents Amplify Inconsistency
+
+Humans tolerate inconsistency because they learn socially. A careful engineer who sees two patterns in the same codebase pauses, asks which one is preferred, and stops reinforcing the wrong one. Agents don't pause. They imitate statistically: two acceptable patterns in the surrounding code and the next PR picks one at random; the next agent reads the result and the rejected alternative becomes the new default for that area. Local inconsistency compounds with every diff.
+
+The right kind of agent would behave socially, stop at the ambiguity, and ask. Until that exists, every false assumption an agent makes, no matter how small, has to become a check before the next agent hits the same ambiguity. The answer has to be visible in the repo, encoded somewhere the agent can't miss, so the next session finds the canonical path without having to guess.
+
+Two principles do most of that work. The language is treated as too powerful by default, and anything that can be implemented more than one way gets a single canonical path.
+
+Modern languages ship more syntax than any project should use. Every footgun gets pruned: no `any`, no type assertions, no `typeof` for runtime validation, no clever destructuring that hides control flow, no implicit coercions where a schema belongs. The list grows by observation; every rule started as a mistake. The cognitive surface shrinks with each addition, which is what makes large files navigable and refactors routine.
+
+One canonical path per problem matters just as much. One way to fetch data. One way to model client state. One way to handle a form. A canonical path collapses the decision tree to a single answer, and the existing code becomes the implicit spec for new code.
+
+A stricter codebase was always something a human could obey on understanding alone; the rules are the kind a careful engineer would have written for themselves. Humans pass the same lints as agents, and the friction is paid once and remembered. Once both sides converge on the same canonical path, reviews stop being about layering, naming, and style, and compress to the bugs that matter.
+
+## Watch What the Agents Get Wrong
+
+Knowing which checks to write doesn't transfer between projects. Generic linter packs catch the obvious cases and miss the ones that hurt. The checks worth writing come from watching what the agents in this codebase get wrong on real PRs. Every mistake gets triaged in the moment: one-off product bug, or a maintainability mistake that could surface again in a different shape? The second kind earns a permanent check. Tests for the same mistake get written in the same turn, while the agent still has the full context of the feature; a week later, that context is gone.
+
+Two examples. Mutations from `useMutation` were getting fired with `.mutate(...)`, which returns immediately and lets the surrounding code run before the RPC resolves. Form resets, overlay closes, and follow-up queries that should have waited fired against the pre-mutation state, and the bug only surfaced under latency. A check now rejects `.mutate(...)` and demands `.mutateAsync(...)` with `await`, so the coordination is forced into the type system. JSX short-circuits like `{items.length && <List />}` were rendering a literal `0` to the DOM whenever the array was empty, because `0` is a valid React child. A check rejects `cond && <Jsx/>` in child position and requires `cond ? <Jsx/> : null`, which can't produce a stray digit. Each rule started as a single shipped mistake and became a permanent property of the repo within minutes.
+
+What transfers is the discipline, not the specific rules. Every observed mistake is a question about which check was missing.
+
+## Linter Rules That Generalize
+
+The specific checks depend on the codebase, but a few rules pay off almost everywhere.
+
+- **Cap file length.** Short files get read fully. Long files get a window read and the rest inferred badly. A hard cap forces a split when a module grows past it and keeps context cheap: three small files cost less than one sprawling one.
+- **Strict typing with no escape hatches.** No `any`, no assertions, no `typeof` for runtime validation. Schemas at boundaries, generated types from contracts, nothing in between.
+- **Every override leaves a trace.** Disabling a rule requires a comment naming the rule and the reason. Silent overrides are banned. Audit is the price of strictness.
+- **Heuristic rules are allowed.** A check that occasionally over-fires is worth shipping if the override leaves a comment. Refusing to write a rule because it can't be perfect is how systems-level concerns stay unenforced.
+
+## A Codebase That Stays Readable
+
+In Formal's previous codebase, agent-written code accumulated faster than I could absorb. After a few months I couldn't drop into a file without re-reading the surrounding context. The codebase was working and opaque.
+
+In the new monorepo, every nit I would have left on a PR became a check. The cost of writing one is now minutes; an agent writes the check and its tests. The cost of leaving the same nit on twenty future PRs is what it always was. The trade tilts so far toward encoding the rule that the only question is whether the rule is right.
+
+Two months in, I can jump into any file and know precisely where to look. The conventions are stricter than I would have written for a human team, which makes the codebase simpler rather than denser. One place for state, one place for forms, one shape for imports, one path for data fetching.
+
+The clearest signal that the harness was working came when I rebuilt a codebase that had taken years to grow in under a month, at full parity. Every feature shipped against the same checks, so the surfaces came out coherent in the same product language without me having to enforce that by hand. The PRs needed almost no line-by-line review; I'd watched CI go green on the architectural choices that mattered and trusted the rest to the rules. Most of the time I spent was deciding what to build next, not catching what the agent did wrong.
+
+The same forcing function makes diffs trivial to review. Every PR looks the same on the page, so the reviewer's eye glides over the structural lines and the only things that stand out are the parts that required judgment. If CI is green, every category of feedback that used to fill a review thread is already resolved. What's left is whether the change is the right thing to build and whether it sits in the right place. Reviews compress to the two questions worth a senior engineer's attention.
+
+Agent code reviewers extend the same loop. Claude, Cursor Bugbot, and the rest read each diff with full repo context and catch bugs the linter doesn't yet know about. Each comment they leave is also a candidate for the next check. When the bug can be phrased as a forbidden pattern over a recognizable abstraction, the rule gets written and the next instance fails in CI before any reviewer sees it.
+
+## Personalization That Compounds
+
+The repo is the harness. The monorepo makes it complete, because every contract, consumer, and generated artifact the agent has to reason about lives inside it.
+
+A frontier model will never, on its own, write minimal, legible, maintainable code that holds up across a real product. Taste is subjective. It's downstream of judgment about a specific product, team, and set of constraints, and the next model trained on slightly different data won't inherit any of that. Without a harness, the agent defaults to the median of its training distribution, and the median isn't where good code lives. Prompt files and memory entries help a little, and anything the model can ignore eventually gets ignored.
+
+The checks are different in kind. They aren't maintenance debt that has to be retuned every time the harness or the agent tool releases a new version. They sit one layer below the harness and one layer above the product code, in a layer the engineer owns outright. A rule that turns out to be wrong is minutes to edit. A rule that turns out to be right keeps paying every PR forever. Nothing in that layer rots the way prompt files do, because the contract is between the codebase and itself, not between the engineer and a model release cycle. That's what makes the returns compound. Taste has to live somewhere the next model can't argue with it.
+
+## The Architect Stays
+
+What's left for the engineer is the work that was always worth doing.
+
+- **Taste.** Which surfaces deserve real polish, which patterns are honest, which abstractions earn their place.
+- **Systems architecture.** Where things live, what depends on what, which categories of mistake are deterministically impossible.
+- **Product direction.** What to build, what to cut, what the user is actually trying to do that the spec didn't capture.
+
+Implementation detail is downstream of those calls; an agent handles it once the rules are right. The senior leverage that remains is preventing entire classes of bad code from being possible. Agentic development forces every engineering team to convert implicit culture into executable systems, and the engineer's work is deciding which culture is worth executing. Getting the rules right, and giving them a place to live where they can't be argued away, is the work.

@@ -1,0 +1,118 @@
+---
+title: "Pulling an Enterprise Console Off Next.js (V2: Principle-First)"
+description: "Every runtime actor should justify its existence. Next.js no longer did."
+date: "May 2026"
+keywords: "Next.js, Vite, React, Static SPA, HTTP/2, CDN, Security, Supply Chain, Authentication, Cookies, Self-Hosting"
+labels: ["Engineering", "Learnings"]
+featured: false
+draft: true
+---
+
+## Three Years On
+
+Three years ago, putting an authenticated React application on Next.js was the obvious choice. The deployment experience was excellent, and server-rendered React still felt like the future of frontend architecture. For Formal's control plane, the decision held.
+
+Earlier this year I removed it.
+
+The application is now a static SPA built with Vite. Auth lives entirely in the Go API. The frontend deploys as immutable HTML, CSS, and JavaScript behind a CDN. There is no Node runtime, no middleware layer, no server-rendered React tree, and no frontend-owned auth logic left in production.
+
+The migration was a deliberate decision. The goals driving it had been accumulating on the roadmap and eventually reached the point of needing to be addressed together: a security posture that didn't expose the next framework or platform CVE, expected performance gains from removing an intermediate runtime, and a self-hostable build artifact that customers could deploy in their own VPC. They pointed at the same architecture.
+
+## What Next.js Was Running
+
+By the time the migration started, the Next.js runtime in production was hosting:
+
+- Auth server routes: login, callback, logout, all wired to the WorkOS server SDK.
+- Middleware re-checking sessions before requests reached the API.
+- JWT pre-verification.
+- Feature-flag-driven layout rendering.
+- Server-rendered page shells.
+- Theme rendering.
+- Image optimization.
+- Request forwarding to the real backend.
+
+That inventory is what the migration had to address. The architectural question underneath it: how much of that was a runtime actor with irreducible responsibility, and how much was a backend-for-frontend in front of a backend that already existed?
+
+## What an Authenticated Console Actually Is
+
+Most authenticated enterprise consoles are a narrower category of application than modern frontend discourse implies. They fetch authenticated data, render interactive views, submit mutations back to APIs, and maintain local UI state. That's a different shape from content sites, public applications, edge-personalized experiences, or SEO-sensitive products.
+
+For a control plane:
+
+- Crawlers stop at the login page.
+- Every response is tenant-specific.
+- Orchestration already lives in the backend.
+- Meaningful rendering begins after authenticated API requests resolve.
+
+The last point is load-bearing. Server rendering improves perceived shell paint while leaving time-to-meaningful-state unchanged. The user waits on authenticated data hydration regardless of how the HTML got delivered.
+
+Once that's accepted, the architecture starts looking strange. A React server runtime sat between the browser and a backend that already owned the data, auth, orchestration, and business logic. The framework normalized it.
+
+## Meta-Frameworks Blur Boundaries
+
+The deeper issue isn't performance. It's semantic complexity.
+
+Modern frontend meta-frameworks increasingly collapse boundaries that used to be explicit:
+
+- Client vs server.
+- Cached vs uncached.
+- Local call vs RPC.
+- Static vs dynamic rendering.
+- Edge vs regional execution.
+- Frontend vs backend orchestration.
+
+Each feature, in isolation, makes sense. The cumulative effect breaks. React Server Components, Server Actions, middleware, edge runtimes, framework caching, and route-level execution semantics together create applications whose behavior depends on implicit runtime context spread across multiple execution environments.
+
+A function call may actually be a serialized RPC, executed in another runtime, under a different caching model, with different auth semantics, in a different region. That's distributed systems complexity wearing frontend abstractions. For applications that already have a canonical backend, much of it is unnecessary.
+
+## The Security Problem Is Structural
+
+The security argument isn't that Next.js has bugs. Every sufficiently large framework has bugs. Entire categories of vulnerability exist only because the runtime exists.
+
+The CVE cadence made the shape concrete:
+
+- A CVSS 10.0 RCE in React Server Components ([CVE-2025-66478](https://nextjs.org/blog/CVE-2025-66478)).
+- Two RSC denial-of-service advisories ([CVE-2026-23864](https://vercel.com/changelog/summary-of-cve-2026-23864), [CVE-2026-23869](https://vercel.com/changelog/summary-of-cve-2026-23869)).
+- A [Vercel supply-chain incident](https://vercel.com/kb/bulletin/vercel-april-2026-security-incident) where a compromised third-party integration enumerated non-sensitive env vars from a subset of customers.
+
+Every one is a bug in something only a server runtime has: RSC serialization, edge middleware, framework caching, the deploy platform itself. A static frontend exposes none of those surfaces. Patch each instance forever, or remove the category.
+
+AI compounds the picture. Attackers run models that scan and fuzz codebases at speeds that didn't exist a year ago, and exploitable vulnerabilities are surfacing in popular dependencies at a higher rate. AI-assisted development without serious review has shipped a wave of code from engineers who don't fully understand what they wrote. The class of failure isn't going to slow down.
+
+The frontend deployment now contains no privileged credentials, no backend runtime, no auth logic, no server-side orchestration. Handing the repo and the deployment environment to a stranger lets them rebuild the UI. Nothing more.
+
+## Topology, Not Capability
+
+The largest measurable improvement was API latency. Requests now travel browser to API directly instead of browser to frontend runtime to API. That removed middleware execution, an extra TLS handshake, edge indirection, server serialization, and runtime orchestration overhead. Across Formal's workloads, response times dropped 20 to 60 percent.
+
+Authenticated enterprise applications are backend-latency bound, not HTML-delivery bound. Once the frontend stopped bouncing through a server runtime on every navigation, the application became perceptibly faster even after "advanced" rendering infrastructure was removed. The runtime was mostly adding topology, not capability.
+
+## The SPA Tradeoff Changed
+
+The SPA tooling layer is concrete now. TanStack Router handles typed routing and loaders. TanStack Query handles server-state orchestration. Base UI provides accessible primitives. React Hook Form with Zod handles form validation. Client-side navigation is instant after first load.
+
+Meanwhile, frontend meta-frameworks expanded upward into orchestration, backend composition, server execution, edge runtimes, implicit caching, and distributed execution semantics. The tradeoff profile shifted in opposite directions, and many teams kept assuming the old constraints still applied.
+
+Hosting shifted too. Cloudflare Pages was the first non-Vercel deploy I tried, and the DX was comparable to Vercel without a Node runtime in the path. The vendor experience that justified framework lock-in for years is no longer a unique selling point.
+
+## Explicit Systems Age Better
+
+The migration reinforced a broader principle. Systems become more reliable as their boundaries become more explicit.
+
+The browser owns rendering, interactivity, local state, transitions, and optimistic updates. The backend owns auth, policy, orchestration, persistence, and cross-service coordination. The system became easier to reason about once those responsibilities stopped bleeding into each other.
+
+Debugging improved. Deployment simplified. Self-hosting became trivial: customers who require a self-hosted control plane deploy the static bundle behind their VPN, pointed at their own API, and Formal sees nothing. Latency dropped. Security posture improved. Operational surface shrank. All of those are downstream of reducing architectural ambiguity.
+
+## This Isn't an Argument Against Servers
+
+A monolithic backend rendering HTML can still be a coherent architecture. Marketing sites, SEO-heavy products, content platforms, edge-personalized experiences, streaming-heavy applications, and products without canonical APIs all have legitimate reasons to use server runtimes. The issue is runtimes inheriting responsibilities they no longer need to own.
+
+There's a mirror failure mode. Backend frameworks become strained once they start impersonating modern frontend runtimes through template fragments, hydration hacks, and increasingly complex client-side interactivity. The pattern is general: systems degrade when runtimes start impersonating adjacent layers instead of owning their own responsibilities cleanly.
+
+## Every Runtime Should Justify Its Existence
+
+The migration converged on a simple principle: every runtime actor in a system should have unavoidable responsibility. A server runtime earns its place when it provides state nothing else can hold, orchestration nothing else can perform, trust boundaries nothing else can enforce, or rendering work nothing else can own.
+
+In Formal's case, the backend already did all of those things. Once the frontend runtime was removed, what remained was simpler than the architecture I had normalized around: a browser, a CDN, and an API.
+
+This is the same principle at a different layer as [Iterative Engineering in Codebases Designed for Agents](/journal/coding-for-ai-not-humans). Implementation is cheap now, and architecture can finally align with a system's real trust boundaries instead of distorting around whichever tooling was popular when the project started.
