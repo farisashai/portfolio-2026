@@ -109,61 +109,40 @@ export default function AboutPage() {
           </h2>
           <div className="flex flex-col gap-6 text-base leading-relaxed text-muted-foreground">
             <p>
-              I'm a software engineer who cares deeply about building fast,
-              thoughtful, and well-designed products. Over the past five years
-              I've worked across many layers of the stack, primarily focused on
-              frontend systems, refining interactions, and making interfaces
-              feel purposeful and responsive.
+              I'm a software engineer working across frontend, backend,
+              infrastructure, and product. My deepest work sits at the
+              intersection of frontend craft, performance optimization, and
+              systems design, with security, scalability, performance, and
+              maintainability as the through-line.
             </p>
             <p>
-              I enjoy systems thinking just as much as product polish, whether
-              that means improving reliability, smoothing out abstractions, or
-              tightening performance. Every project is approached with intention
-              and a high bar for quality, always looking for the small decisions
-              that make a product feel cohesive.
+              At{" "}
+              <a
+                href="https://www.apple.com/batteries/maximizing-performance/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-foreground underline underline-offset-4 decoration-border hover:decoration-foreground transition-colors"
+              >
+                Apple
+              </a>{" "}
+              on iOS Power, I worked on power triage through analytics
+              pipelines, low-level benchmarking, and A/B testing. At{" "}
+              <a
+                href="https://formal.ai/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-foreground underline underline-offset-4 decoration-border hover:decoration-foreground transition-colors"
+              >
+                Formal
+              </a>
+              , as founding product engineer and the only frontend engineer in
+              the company, I own product direction and taste and have built the
+              full surface to 50+ enterprise companies.
             </p>
             <p>
-              Outside of work, I explore new coffee and tea spots, chase
-              sunsets, listen to live music, and travel.
+              Outside of work, I enjoy cafe hopping, chasing sunsets, reading,
+              and traveling.
             </p>
-          </div>
-
-          {/* History */}
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mt-1.5">
-            History
-          </h2>
-          <div className="flex flex-col gap-4">
-            {sortedHistory.map((item) => (
-              <div
-                key={item.role + item.company}
-                className="flex flex-col"
-              >
-                <span className="font-medium text-foreground">{item.role}</span>
-                <span className="flex justify-between text-muted-foreground">
-                  <span>{item.company}</span>
-                  <span>{formatDateRange(item.start, item.end)}</span>
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {/* Awards */}
-          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mt-1.5">
-            Awards
-          </h2>
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col">
-              <ExternalLink
-                href="https://top.mlh.io/2022/profiles/faris-ashai"
-                className="font-medium text-foreground"
-              >
-                Top 50 Hacker
-              </ExternalLink>
-              <div className="flex justify-between items-baseline text-muted-foreground">
-                <span>Major League Hacking</span>
-                <span className="text-sm tabular-nums">2022</span>
-              </div>
-            </div>
           </div>
 
           {/* Values */}
@@ -223,25 +202,46 @@ export default function AboutPage() {
             </div>
           </div>
 
-          {/* Focus */}
+          {/* History */}
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mt-1.5">
-            Focus
+            History
           </h2>
-          <div className="flex flex-col gap-6 text-base leading-relaxed text-muted-foreground">
-            <p>
-              I lead Frontend at Formal, building a security-focused database
-              reverse proxy that enforces zero-trust policies before a query
-              ever touches customer data.
-            </p>
-            <p>
-              The product prevents data leakage and engineer compromise, manages
-              secrets, and ships auditable analytics, proactive threat
-              detection, streamlined access workflows, and enterprise-grade
-              policy configuration. Every UI surface is a policy management tool
-              that stays deeply integrated with the native cloud providers and
-              tools our customers already trust.
-            </p>
+          <div className="flex flex-col gap-4">
+            {sortedHistory.map((item) => (
+              <div
+                key={item.role + item.company}
+                className="flex justify-between items-start gap-4"
+              >
+                <div className="flex flex-col">
+                  <span className="font-medium text-foreground">{item.role}</span>
+                  <span className="text-muted-foreground">{item.company}</span>
+                </div>
+                <span className="text-muted-foreground shrink-0 tabular-nums">
+                  {formatDateRange(item.start, item.end)}
+                </span>
+              </div>
+            ))}
           </div>
+
+          {/* Awards */}
+          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mt-1.5">
+            Awards
+          </h2>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col">
+              <ExternalLink
+                href="https://top.mlh.io/2022/profiles/faris-ashai"
+                className="font-medium text-foreground"
+              >
+                Top 50 Hacker
+              </ExternalLink>
+              <div className="flex justify-between items-baseline text-muted-foreground">
+                <span>Major League Hacking</span>
+                <span className="text-sm tabular-nums">2022</span>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </Container>

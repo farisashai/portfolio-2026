@@ -6,7 +6,7 @@ export async function GET() {
 
   const content = `# Faris Ashai - Software Engineer
 
-> Personal website and portfolio of Faris Ashai, a software engineer focused on building fast, thoughtful, and well-designed products.
+> Personal website and portfolio of Faris Ashai, a software engineer working across frontend, backend, infrastructure, and product, with deepest work at the intersection of frontend craft, performance optimization, and systems design.
 
 ## About
 ${baseUrl}/about
