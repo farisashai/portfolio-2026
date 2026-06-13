@@ -32,7 +32,7 @@ const newsreader = Newsreader({
 export const metadata: Metadata = {
   title: "Faris Ashai",
   description:
-    "Software Engineer focused on UI systems and interaction design.",
+    "Frontend craft, performance engineering, and systems design, applied across the stack.",
 };
 
 export default async function RootLayout({
