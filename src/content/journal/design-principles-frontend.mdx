@@ -1,422 +1,231 @@
 ---
 title: "Design Principles for Frontend Engineers"
-description: "Practical design principles learned from building interfaces, not studying theory."
+description: "Informal lessons in product design to iterate more confidently and objectively in the right direction"
 date: "November 2025"
-keywords: "Frontend, Design, UI, Performance, User Experience"
+keywords: "Frontend, Design, UI, UX, Motion, Interaction, Design Systems"
 labels: ["Design"]
 featured: false
 draft: true
 ---
 
-## Learning Design Through Implementation
+Over the past year as the sole frontend engineer at Formal, I've had to design countless interfaces across the platform. The engineering side of building a good product isn't solved, but it is more straightforward: bug-free features, maintainable abstractions, performance you can reason about and test. As someone who never formally studied UI/UX/HCI, the visual look and feel was harder to quantify — beyond a rough sense that something is ugly and could be better.
 
-As implementation costs of coding continuously become easier with AI tools, human value keeps shifting towards taste and judgement in product and engineering decisions. On the engineering side, this is more straightforward: performance optimizations, clean maintainable abstractions, bug-free code. These are quantifiable, measurable, and defensible.
+As I've gotten faster at building the right shape for a feature, I've internalized design principles from customer feedback and from following designers I admire online. Design is a craft anyone can learn. Simple improvements compound into a product that feels professionally crafted — with care, personality, and delight.
 
-The design side is harder to quantify, especially for anyone like me who never studied UI/UX/HCI or worked as a designer. I learned design by building interfaces, observing what felt right, and reverse-engineering why certain products felt so good to use. I've internalized design principles by watching what the best designers online talk about and how they think.
+## User Success
 
-Over the past half year leading frontend at Formal, I've finally been able to find some answers to the question of what makes a good design. What makes a product feel polished, delightful, and crafted with care? Choices can be justified objectively with opinionated takes, reaching a refined state sooner instead of leaning on personal preference when explaining decisions to a team.
+The primary metric of a good interface is **user success**: maximize delight, minimize frustration. The product should help users get as much out of it as possible with the features available. Surprise them with capabilities they didn't know they needed. Establish patterns that make navigation obvious. Be helpful in error cases. Minimize friction.
 
-Design is a craft that can be learned and improved with practice. Looking good is part of it, but how something feels to use matters just as much. The three layers, in order of importance, are visual design, interaction design, and motion design. Each plays a distinct role in how a product feels, and without a keen eye for all three, simple improvements that compound into something special are easy to overlook.
+We achieve this through three design layers — **visual**, **interaction**, and **motion** — each with its own principles, all in service of the same goal.
 
 ---
 
 ## Visual Design
 
-Visual design is what the user sees before they do anything. Layout, typography, color, spacing, hierarchy. It's the first impression, and it either builds trust or creates doubt. A well-structured page communicates competence before a single interaction happens. A messy one makes users question whether the product works correctly, even if it does.
+Visual design is what users see before they do anything. Layout, typography, color, spacing, hierarchy. It builds trust or creates doubt before a single click.
 
-The principles in this section are about getting the static frame right: making sure the eye knows where to go, that elements feel anchored to a system, and that the page reads as intentional rather than accidental.
+### Design Systems
 
-## Visual Hierarchy
+Build consistent systems. An allowlisted spacing scale, a small set of display and label fonts, a fixed set of font sizes, and a component library that is auditable and tweakable without reproducing every edge case state.
 
-If everything is bold, nothing is bold. Visual hierarchy guides the user's attention without requiring them to read every word.
+The system should feel **considerate, differentiated yet restrained** — predictable consistency anywhere the user goes, that never slips. You don't need a monotone product or an infinite palette. You need a small set of values in an allowed set. Brand uniqueness lives in those constraints, not in one-off decoration.
 
-**Techniques**:
-- **Size**: Larger text draws attention. Use size to indicate importance, not just headings.
-- **Weight**: Bold for primary actions, regular for secondary, muted for tertiary.
-- **Color**: Foreground for critical info, muted tones for supporting text, accent colors for CTAs.
-- **Spacing**: Generous whitespace separates sections and reduces noise.
+<BorderRadiusDemo />
 
-**Anti-pattern**: Making everything "important." If every element is brightly colored or bolded, the user has to work harder to figure out where to look.
+### Alignment
 
-## Alignment Is Care
+Properly aligned interfaces don't feel special. They feel natural. Misaligned interfaces are a terrible distraction — they signal nobody cared, and they break trust even when the core feature is correct.
 
-Good design gets noticed because something *feels right*, and more often than not, that feeling comes from alignment, not from bold colors or flashy graphics. Snapping elements to a grid, aligning baselines, keeping consistent spacing. These are the invisible decisions that separate "looks fine" from "feels polished."
+Alignment nudges the user's cognitive model of what belongs together. Proximity, shared borders, and consistent axes tell people which fields are one unit, which sections are separate, and what order to read — before they read a word of copy.
 
-When layouts feel flat or lifeless, the problem is usually that nothing is anchored. Text floats at arbitrary positions. Labels don't line up with their values. Spacing between sections is inconsistent. The eye has nowhere to rest, so the whole page feels uneasy.
+Alignment is broader than "things line up." It's where elements sit on the x and y axis inside a container — flex row, flex column, grid, or nested combinations. It's also **what gets grouped together**: related controls belong in an input group — shared border, internal dividers, one visual unit.
 
-**Grid alignment is the foundation of visual trust.** When elements sit on a predictable rhythm, the user's brain spends zero effort parsing the layout. They can focus entirely on the content. Breaking that rhythm introduces subtle cognitive friction that accumulates across every screen.
+A payment form with `USD 49.00` in one amount field, expiry and CVV on separate rows, and city, state, and ZIP each full width forces users to parse unrelated strings. Group the currency prefix with the amount. Pair expiry and security code on one row. Put city, state, and ZIP in a shared input group.
 
-Consider a sidebar layout with a nav and main content area, common in any dashboard or settings page:
+- **Use input groups for related controls.** Currency + amount, expiry + CVV, city + state + ZIP.
+- **Share axes inside a group.** Same height, internal dividers — not gaps between separate boxes.
+- **Separate unrelated sections** — card details and billing address get their own labels and spacing.
 
-<div style={{display:'flex',flexDirection:'column',gap:'2rem',margin:'2rem 0'}}>
-<div style={{borderRadius:'0.5rem',border:'1px solid var(--border)',overflow:'hidden'}}>
-<div style={{fontSize:'0.7rem',fontFamily:'monospace',color:'var(--muted-foreground)',padding:'0.75rem 1rem',borderBottom:'1px solid var(--border)',textTransform:'uppercase',letterSpacing:'0.05em',background:'var(--muted)'}}>Without grid structure</div>
-<div style={{display:'flex',background:'var(--background)',minHeight:'16rem'}}>
-<div style={{padding:'1rem'}}>
-<div style={{fontSize:'0.75rem',fontWeight:600,color:'var(--muted-foreground)',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:'0.75rem'}}>Settings</div>
-<div style={{display:'flex',flexDirection:'column',gap:'0.25rem'}}>
-<div style={{fontSize:'0.85rem',color:'var(--foreground)',padding:'0.35rem 0.5rem',background:'var(--muted)',borderRadius:'0.25rem'}}>General</div>
-<div style={{fontSize:'0.85rem',color:'var(--muted-foreground)',padding:'0.35rem 0.5rem'}}>Security</div>
-<div style={{fontSize:'0.85rem',color:'var(--muted-foreground)',padding:'0.35rem 0.5rem'}}>Billing</div>
-<div style={{fontSize:'0.85rem',color:'var(--muted-foreground)',padding:'0.35rem 0.5rem'}}>Team</div>
-</div>
-</div>
-<div style={{padding:'1.5rem',flex:1}}>
-<div style={{fontSize:'1rem',fontWeight:600,color:'var(--foreground)',marginBottom:'0.25rem'}}>General Settings</div>
-<div style={{fontSize:'0.8rem',color:'var(--muted-foreground)',marginBottom:'1.25rem'}}>Manage your workspace configuration</div>
-<div style={{display:'flex',flexDirection:'column',gap:'0.75rem'}}>
-<div style={{display:'flex',alignItems:'center',gap:'0.5rem'}}>
-<span style={{fontSize:'0.8rem',color:'var(--muted-foreground)'}}>Workspace name</span>
-<div style={{fontSize:'0.8rem',padding:'0.4rem 0.6rem',border:'1px solid var(--border)',borderRadius:'0.25rem',color:'var(--foreground)',flex:1}}>Acme Corp</div>
-</div>
-<div style={{display:'flex',alignItems:'center',gap:'0.5rem'}}>
-<span style={{fontSize:'0.8rem',color:'var(--muted-foreground)'}}>Slug</span>
-<div style={{fontSize:'0.8rem',padding:'0.4rem 0.6rem',border:'1px solid var(--border)',borderRadius:'0.375rem',color:'var(--foreground)',flex:1}}>acme-corp</div>
-</div>
-<div style={{display:'flex',alignItems:'center',gap:'0.5rem'}}>
-<span style={{fontSize:'0.8rem',color:'var(--muted-foreground)'}}>Region</span>
-<div style={{fontSize:'0.8rem',padding:'0.4rem 0.6rem',border:'1px solid var(--border)',borderRadius:'0.25rem',color:'var(--foreground)',flex:1}}>us-east-1</div>
-</div>
-<div style={{marginTop:'0.75rem',display:'flex',gap:'0.5rem',alignItems:'center'}}>
-<div style={{fontSize:'0.875rem',padding:'0.5rem 1.25rem',background:'var(--foreground)',color:'var(--background)',borderRadius:'0.375rem',display:'inline-block',fontWeight:500}}>Save</div>
-<div style={{fontSize:'0.75rem',padding:'0.3rem 0.5rem',border:'1px solid var(--border)',borderRadius:'0.375rem',display:'inline-block',color:'var(--muted-foreground)'}}>Cancel</div>
-</div>
-</div>
-</div>
-</div>
-</div>
+<AlignmentFormDemo />
 
-<div style={{borderRadius:'0.5rem',border:'1px solid var(--border)',overflow:'hidden'}}>
-<div style={{fontSize:'0.7rem',fontFamily:'monospace',color:'var(--muted-foreground)',padding:'0.75rem 1rem',borderBottom:'1px solid var(--border)',textTransform:'uppercase',letterSpacing:'0.05em',background:'var(--muted)'}}>With grid borders and column alignment</div>
-<div style={{display:'flex',background:'var(--background)',minHeight:'16rem'}}>
-<div style={{padding:'1rem',width:'140px',borderRight:'1px solid var(--border)'}}>
-<div style={{fontSize:'0.75rem',fontWeight:600,color:'var(--muted-foreground)',textTransform:'uppercase',letterSpacing:'0.05em',marginBottom:'0.75rem'}}>Settings</div>
-<div style={{display:'flex',flexDirection:'column',gap:'0.25rem'}}>
-<div style={{fontSize:'0.85rem',color:'var(--foreground)',padding:'0.35rem 0.5rem',background:'var(--muted)',borderRadius:'0.25rem'}}>General</div>
-<div style={{fontSize:'0.85rem',color:'var(--muted-foreground)',padding:'0.35rem 0.5rem'}}>Security</div>
-<div style={{fontSize:'0.85rem',color:'var(--muted-foreground)',padding:'0.35rem 0.5rem'}}>Billing</div>
-<div style={{fontSize:'0.85rem',color:'var(--muted-foreground)',padding:'0.35rem 0.5rem'}}>Team</div>
-</div>
-</div>
-<div style={{padding:'1.25rem 1.5rem',flex:1}}>
-<div style={{fontSize:'1rem',fontWeight:600,color:'var(--foreground)',marginBottom:'0.25rem'}}>General Settings</div>
-<div style={{fontSize:'0.8rem',color:'var(--muted-foreground)',marginBottom:'1.5rem'}}>Manage your workspace configuration</div>
-<div style={{display:'grid',gridTemplateColumns:'7rem 1fr',rowGap:'0.75rem',columnGap:'1.25rem',alignItems:'center'}}>
-<span style={{fontSize:'0.8rem',color:'var(--muted-foreground)'}}>Workspace name</span>
-<div style={{fontSize:'0.8rem',padding:'0.4rem 0.6rem',border:'1px solid var(--border)',borderRadius:'0.25rem',color:'var(--foreground)'}}>Acme Corp</div>
-<span style={{fontSize:'0.8rem',color:'var(--muted-foreground)'}}>Slug</span>
-<div style={{fontSize:'0.8rem',padding:'0.4rem 0.6rem',border:'1px solid var(--border)',borderRadius:'0.25rem',color:'var(--foreground)'}}>acme-corp</div>
-<span style={{fontSize:'0.8rem',color:'var(--muted-foreground)'}}>Region</span>
-<div style={{fontSize:'0.8rem',padding:'0.4rem 0.6rem',border:'1px solid var(--border)',borderRadius:'0.25rem',color:'var(--foreground)'}}>us-east-1</div>
-</div>
-<div style={{marginTop:'1.25rem',display:'flex',justifyContent:'flex-end'}}>
-<div style={{fontSize:'0.8rem',padding:'0.4rem 1.25rem',background:'var(--foreground)',color:'var(--background)',borderRadius:'0.25rem',fontWeight:500}}>Save</div>
-</div>
-</div>
-</div>
-</div>
-</div>
+### Visual Hierarchy
 
-Same layout, same information. But the second version has a border separating the sidebar from the content, a CSS grid snapping labels and inputs into aligned columns, consistent padding, and a right-aligned action button. Every element has a clear position on the grid. Nothing floats.
+Not everything has to be a grid or a table. Not everything needs a single font size. Differentiation guides the eye from the most important starting point to the finer details — in a way where the feature explains itself.
 
-Now look at an input group with filters and a data table:
+If everything is bold, nothing is bold. Size, weight, color, and spacing should indicate importance:
 
-<div style={{display:'flex',flexDirection:'column',gap:'2rem',margin:'2rem 0'}}>
-<div style={{borderRadius:'0.5rem',border:'1px solid var(--border)',overflow:'hidden'}}>
-<div style={{fontSize:'0.7rem',fontFamily:'monospace',color:'var(--muted-foreground)',padding:'0.75rem 1rem',borderBottom:'1px solid var(--border)',textTransform:'uppercase',letterSpacing:'0.05em',background:'var(--muted)'}}>Loose input group</div>
-<div style={{padding:'1.25rem',background:'var(--background)',display:'flex',flexDirection:'column',gap:'1rem'}}>
-<div style={{display:'flex',gap:'0.5rem',flexWrap:'wrap'}}>
-<div style={{fontSize:'0.8rem',padding:'0.4rem 0.6rem',border:'1px solid var(--border)',borderRadius:'0.375rem',color:'var(--muted-foreground)',flex:1,minWidth:'150px'}}>Search users...</div>
-<div style={{fontSize:'0.75rem',padding:'0.25rem 0.5rem',border:'1px solid var(--border)',borderRadius:'0.375rem',color:'var(--muted-foreground)'}}>Role: All ↓</div>
-<div style={{fontSize:'0.8rem',padding:'0.5rem 0.75rem',border:'1px solid var(--border)',borderRadius:'0.375rem',color:'var(--muted-foreground)'}}>Status ↓</div>
-<div style={{fontSize:'0.875rem',padding:'0.5rem 1.25rem',background:'var(--foreground)',color:'var(--background)',borderRadius:'0.375rem',fontWeight:500}}>Search</div>
-</div>
-<div style={{display:'grid',gridTemplateColumns:'5fr 2fr 2fr 1fr',gap:'0.75rem',fontSize:'0.8rem',color:'var(--muted-foreground)',padding:'0.5rem 0',borderBottom:'1px solid var(--border)'}}>
-<span style={{fontWeight:600}}>Name</span>
-<span>Role</span>
-<span>Status</span>
-<span>Last active</span>
-</div>
-<div style={{display:'flex',flexDirection:'column',fontSize:'0.8rem'}}>
-<div style={{display:'grid',gridTemplateColumns:'5fr 2fr 2fr 1fr',gap:'0.75rem',padding:'0.4rem 0'}}>
-<span style={{color:'var(--foreground)'}}>Sarah Chen</span>
-<span style={{color:'var(--muted-foreground)'}}>Admin</span>
-<span style={{color:'var(--muted-foreground)'}}>Active</span>
-<span style={{color:'var(--muted-foreground)'}}>2m ago</span>
-</div>
-<div style={{display:'grid',gridTemplateColumns:'5fr 2fr 2fr 1fr',gap:'0.75rem',padding:'0.4rem 0'}}>
-<span style={{color:'var(--foreground)'}}>James Wright</span>
-<span style={{color:'var(--muted-foreground)'}}>Editor</span>
-<span style={{color:'var(--muted-foreground)'}}>Invited</span>
-<span style={{color:'var(--muted-foreground)'}}></span>
-</div>
-</div>
-</div>
-</div>
+- **Size**: larger text draws attention — use it for importance, not just headings
+- **Weight**: bold for primary actions, regular for secondary, muted for tertiary
+- **Color**: foreground for critical info, muted tones for supporting text, accent for CTAs
+- **Spacing**: generous whitespace separates sections and reduces noise
 
-<div style={{borderRadius:'0.5rem',border:'1px solid var(--border)',overflow:'hidden'}}>
-<div style={{fontSize:'0.7rem',fontFamily:'monospace',color:'var(--muted-foreground)',padding:'0.75rem 1rem',borderBottom:'1px solid var(--border)',textTransform:'uppercase',letterSpacing:'0.05em',background:'var(--muted)'}}>Aligned input group with consistent radii and grid</div>
-<div style={{padding:'1.25rem',background:'var(--background)',display:'flex',flexDirection:'column',gap:'1rem'}}>
-<div style={{display:'flex',gap:'0.5rem',alignItems:'center'}}>
-<div style={{fontSize:'0.8rem',padding:'0.4rem 0.6rem',border:'1px solid var(--border)',borderRadius:'0.375rem',color:'var(--muted-foreground)',flex:1}}>Search users...</div>
-<div style={{fontSize:'0.8rem',padding:'0.4rem 0.6rem',border:'1px solid var(--border)',borderRadius:'0.375rem',color:'var(--muted-foreground)'}}>Role: All ↓</div>
-<div style={{fontSize:'0.8rem',padding:'0.4rem 0.6rem',border:'1px solid var(--border)',borderRadius:'0.375rem',color:'var(--muted-foreground)'}}>Status ↓</div>
-<div style={{fontSize:'0.8rem',padding:'0.4rem 1rem',background:'var(--foreground)',color:'var(--background)',borderRadius:'0.375rem',fontWeight:500}}>Search</div>
-</div>
-<div style={{border:'1px solid var(--border)',borderRadius:'0.375rem',overflow:'hidden'}}>
-<div style={{display:'grid',gridTemplateColumns:'3fr 2fr 2fr 2fr',gap:'0.75rem',fontSize:'0.8rem',color:'var(--muted-foreground)',padding:'0.5rem 0.75rem',background:'var(--muted)',borderBottom:'1px solid var(--border)'}}>
-<span style={{fontWeight:600}}>Name</span>
-<span style={{fontWeight:600}}>Role</span>
-<span style={{fontWeight:600}}>Status</span>
-<span style={{fontWeight:600,textAlign:'right'}}>Last active</span>
-</div>
-<div style={{display:'grid',gridTemplateColumns:'3fr 2fr 2fr 2fr',gap:'0.75rem',fontSize:'0.8rem',padding:'0.5rem 0.75rem',borderBottom:'1px solid var(--border)',alignItems:'center'}}>
-<span style={{color:'var(--foreground)'}}>Sarah Chen</span>
-<span style={{color:'var(--muted-foreground)'}}>Admin</span>
-<span><span style={{fontSize:'0.7rem',padding:'0.15rem 0.5rem',borderRadius:'9999px',background:'var(--muted)',color:'var(--foreground)',fontWeight:500}}>Active</span></span>
-<span style={{color:'var(--muted-foreground)',textAlign:'right',fontVariantNumeric:'tabular-nums'}}>2m ago</span>
-</div>
-<div style={{display:'grid',gridTemplateColumns:'3fr 2fr 2fr 2fr',gap:'0.75rem',fontSize:'0.8rem',padding:'0.5rem 0.75rem',alignItems:'center'}}>
-<span style={{color:'var(--foreground)'}}>James Wright</span>
-<span style={{color:'var(--muted-foreground)'}}>Editor</span>
-<span><span style={{fontSize:'0.7rem',padding:'0.15rem 0.5rem',borderRadius:'9999px',border:'1px solid var(--border)',color:'var(--muted-foreground)',fontWeight:500}}>Invited</span></span>
-<span style={{color:'var(--muted-foreground)',textAlign:'right'}}></span>
-</div>
-</div>
-</div>
-</div>
-</div>
+Restrain decoration: varying text colors, fonts, or sizes for their own sake does not help. Reserve visual flair for special experiences — onboarding, one-time setup, or semantic concepts that genuinely need representation.
 
-The differences are subtle but they compound. Consistent `border-radius` across every input and button so they read as a unified toolbar. A bordered table container with a muted header row that clearly separates the column names from data. Right-aligned timestamps with `tabular-nums`. Grid borders between rows. Status badges instead of plain text. Each element sits on the same grid, aligned to the same columns, at the same height. Nothing is approximate.
+<HierarchyDemo />
 
-**Practical rules:**
-- **Use a grid, not ad-hoc margins.** CSS Grid with explicit column definitions beats `margin-left: 2rem` every time. Grids stay consistent as content changes; margins break.
-- **Align baselines, not centers.** When text of different sizes sits on the same row, align their baselines. Center-aligning creates a subtle wobble that looks off.
-- **Right-align numbers and dates.** Numeric columns should be right-aligned with `tabular-nums` so digits stack cleanly.
-- **Consistent spacing is non-negotiable.** Pick a spacing scale (4px, 8px, 12px, 16px, 24px, 32px) and stick to it. When gaps between sections are sometimes 20px and sometimes 24px, the layout feels unstable even if no one can articulate why.
+### Density and Whitespace
 
-The best designs feel inevitable, like the layout couldn't have been any other way. That feeling comes from alignment.
+Density is a property of the UI, not a universal constant. A feature with a lot to configure needs room to breathe without becoming a wall of controls. A feature that is a single toggle to enable something new doesn't need a full-page layout with empty margins.
+
+Whitespace is often wasted. Empty space is an opportunity for a more interesting layout — not an excuse to spread three fields across a viewport. Consider the maximum information you can realistically fit before needing to split it.
+
+<DensityDemo />
+
+---
+
+## The Interface Should Explain Itself
+
+This sits between visual and interaction design, because it depends on both.
+
+**Assume zero customer support.** An interface that doesn't explain itself is a failure. Apple's best design is discovered on its own — users explore, and the interface rewards that exploration. Eventually, if you label and document everything on the surface, you trade clarity for clutter.
+
+Putting your UI on crutches is a weak solution. Tutorials, tooltips on every field, and a docs site that compensates for confusing flows mean the design failed. Documentation should extend capability, not patch over poor design. If a feature needs a walkthrough, redesign the feature.
+
+The interface should speak before the user asks. Empty states explain what goes here. Placeholder text shows the expected format. Disabled buttons have tooltips explaining why they're disabled.
+
+The test: watch someone use it for the first time with no guidance. Where do they hesitate? Where do they reach for help? Those moments are design failures.
 
 ---
 
 ## Interaction Design
 
-Interaction design is what happens when the user starts doing things. Clicking, typing, navigating, configuring. It's the logic of the experience: how information is revealed, how complexity is managed, how the interface responds to intent. Good interaction design makes a product feel smart. Bad interaction design makes a user feel stupid.
+Interaction design is what happens when users start doing things — clicking, typing, navigating, configuring. It's the logic of the experience: how information is revealed, how complexity is managed, how the interface responds to intent.
 
-Visual design is about the frame; interaction design is about the flow. It determines whether using the product feels effortless or exhausting, whether users discover features with delight or give up and file a support ticket.
+### Multimodal Inputs
 
-## Design for Discovery, Not Documentation
+Users don't interact one way. They drag, type, click buttons, scroll, write code, edit JSON config, use natural language, or speak. With AI in the mix, the surface area has exploded — the same action might be invokable through a form field, a chat prompt, or a programmatic API call.
 
-Apple's design philosophy has a principle worth stealing: the best interface needs almost no support because people discover things naturally and enjoy the process. The goal is an experience with such low cognitive overhead that using it feels like a natural extension of thought.
+The goal is to use the **fastest interface to project the user's intent into the system**. A power user might prefer raw config. A less technical user might prefer guided inputs. Support both where it matters, hide advanced modes behind progressive disclosure, and don't punish the majority with complexity they don't need.
 
-The point is to build flows so intuitive that users rarely need a help button. When someone picks up an iPhone for the first time, they tap, swipe, and explore, and the interface rewards that exploration at every turn. A button looks pressable. A list looks scrollable. A swipe reveals options that feel like they were *waiting* to be found.
+Physical input modes still matter and have countless valid approaches:
 
-**Why this matters for product engineers:**
+- **Touch**: targets large enough to hit (44px minimum), no hover-dependent features, intentional gestures
+- **Keyboard**: full tab navigation, logical focus order, discoverable shortcuts (`Cmd+K`, `/` for search), obvious focus states
+- **Mouse**: hover feedback, click targets sized for precision, drag that doesn't lag
 
-Most enterprise software takes the opposite approach. It front-loads complexity, buries features in nested menus, and ships a 40-page docs site to compensate. Then it measures success by how many support tickets it deflects. The real metric is how many support tickets were never created because the interface made the answer obvious.
+Can the feature be used with only a keyboard? Only touch? Any failure excludes users.
 
-**Low cognitive overhead means:**
-- **Every interaction teaches the next one.** If swiping left on one list item reveals a delete action, users expect swiping left on *any* list item to do the same. Consistency compounds trust.
-- **The interface speaks before the user asks.** Empty states explain what goes here. Placeholder text shows the expected format. Disabled buttons have tooltips explaining *why* they're disabled. The UI answers questions proactively.
-- **Flows feel like gravity.** The next step should feel obvious. If a user has to stop and think "what do I do now?" the design has failed. Visual weight, positioning, and progressive disclosure create a natural pull toward the next action.
-- **Delight is the reward for exploration.** When a power user discovers `Cmd+K` opens a command palette, or that columns can be dragged to reorder a table, that moment of discovery builds loyalty. They found something hidden on purpose, by a designer who respected their intelligence enough to let them find it.
+A filter interface might offer a visual query builder for beginners and a raw SQL input for power users. Let the user toggle between modes.
 
-**The anti-pattern is "support-driven design"**: building a mediocre interface and then writing documentation to explain it. If a feature needs a tutorial, the feature needs redesign. Documentation should extend capability, not compensate for poor design.
+### Progressive Disclosure
 
-**The test**: Watch someone use the interface for the first time without any guidance. Where do they hesitate? Where do they reach for help? Those moments are design failures. Fix the interface.
+Not everything needs to be shown immediately. If a surface is getting too dense, or a control isn't the first thing someone will reach for, or it carries built-in complexity that only matters in specific cases — defer it. Show what the user needs now. Make the rest discoverable when context demands it.
 
-## Progressive Disclosure
+The failure modes sit at opposite ends. A 20-step wizard for something that could be three fields forces unnecessary pacing and hides the shape of the task. A single massive control panel dumps every option on screen at once — nothing breathes, nothing guides the eye, and the user has to parse a wall of controls before doing anything useful.
 
-Don't show everything at once. Reveal complexity as the user needs it.
+The target is somewhere in between: a panel that feels open and scannable, with related controls grouped, common paths obvious, and advanced or rare settings tucked behind a collapse, a tab, or a secondary screen. The user should see enough to understand what the feature does and complete the happy path without scrolling through configuration they'll never touch.
 
-**Examples**:
-- **Settings panels**: Start with the most common options. Hide advanced settings behind a collapsible section or a separate screen.
-- **Forms**: Multi-step forms feel less overwhelming than a single long page, even if the total fields are the same.
-- **Tooltips and help text**: Context-sensitive hints that appear on hover or focus, not cluttering the default view.
+Configuration is stress. Every option creates cognitive load — understand it, evaluate it, choose a value, live with the consequence. Default to sensible choices. If fewer than 20% of users need a setting, make it opt-in.
 
-The goal is to reduce cognitive load. Show the user what they need now, and make the rest discoverable.
+**When to disclose later:**
+- Advanced tuning that most users never change
+- Options that only apply after a prerequisite is enabled (e.g. webhook URL after webhooks are turned on)
+- Destructive or irreversible actions that need context first
+- Power-user modes — raw JSON, SQL, regex — behind a toggle from the guided UI
 
-## Hidden Features Are Okay
+**When to keep visible:**
+- Fields required for the primary action
+- Choices that change what the rest of the form shows
+- Status and feedback the user needs to trust the system is working
 
-Not every feature needs to be visible. Power users will discover shortcuts, advanced settings, and hidden commands, and appreciate them more because they found them.
+The test: can someone complete the most common task without expanding a single collapsed section? If not, you buried something essential. Can they see the full scope of the feature without feeling overwhelmed? If not, you showed too much too soon.
 
-**Examples**:
-- **Keyboard shortcuts**: Don't clutter the UI with every shortcut. Provide a "?" help modal for discoverability.
-- **Context menus**: Right-click menus surface actions without crowding the primary interface.
-- **Hover states**: Reveal secondary actions on hover (edit, delete, share) instead of showing them by default.
+### Discovery and Hidden Power
 
-The best interfaces are simple by default and powerful on demand.
+Not every feature needs to be visible. Keyboard shortcuts, context menus, hover-revealed actions, and command palettes keep the default interface simple while rewarding exploration. When a power user discovers `Cmd+K` or that columns reorder on drag, that moment builds loyalty.
 
-## Configuration Is Stress
+Delight is the reward for exploration. Consistency compounds trust — if swiping left deletes one list item, users expect it everywhere.
 
-Every configuration option you expose creates cognitive load. Users must understand what the option does, evaluate whether they need it, decide on a value, and live with the consequences of their choice.
+### Reduce Friction
 
-Research on the paradox of choice shows that **fewer options lead to greater usage and satisfaction**. When faced with too many choices, users experience decision paralysis, make worse decisions, or abandon the task entirely.
+User errors signal friction. Unclear error messages, irreversible actions without confirmation, hidden affordances, unnecessary steps, slow feedback loops — each one kills adoption. When a field only accepts values from a known set, don't make users guess — use a select, radio group, or segmented control instead of free text with buried helper copy.
 
-**Examples**:
-- **Email clients**: Gmail succeeded partly by offering dramatically fewer settings than enterprise email clients. Most users never wanted that complexity.
-- **Design tools**: Figma's constrained set of layout options (Auto Layout) is easier to learn and use than CSS Flexbox's 20+ properties, even though it's less powerful.
-- **Form builders**: A drag-and-drop form builder with 5 field types will see more adoption than one with 50 field types, even if the latter is "more capable."
+<ErrorMessageDemo />
 
-**The principle**: Default to sensible choices. Hide advanced configuration behind progressive disclosure. If a setting is needed by fewer than 20% of users, make it opt-in, not front-and-center.
+Other friction patterns:
+- **Irreversible actions** without confirmation or undo.
+- **Unnecessary steps**: multi-step flows that could be a single screen.
+- **Slow feedback loops**: waiting 5 seconds to see if a form submission succeeded.
 
-**The nuance**: Power users will always want more control. That's fine. Support them through escape hatches, advanced modes, or raw config files. But don't punish the majority by forcing them to navigate complexity they don't need.
-
-## Reduce Friction
-
-User errors signal friction in the UX. Friction kills adoption, retention, and satisfaction. The designer's and engineer's job is to reduce friction wherever possible, ego included.
-
-**Take feedback without ego**: Especially feedback from users who don't share the designer's background, taste, or technical expertise. When a user struggles with an interface, that's a design problem. They might not articulate the issue well ("I don't like it" or "it's confusing"), but their struggle is real and worth investigating.
-
-**Examples of high-friction patterns**:
-- **Unclear error messages**: "Invalid input" doesn't help. "Email must include an @ symbol" does.
-- **Irreversible actions without confirmation**: Deleting data with no undo or confirmation dialog.
-- **Hidden affordances**: Requiring users to discover features through trial and error or documentation.
-- **Unnecessary steps**: Multi-step flows that could be a single screen.
-- **Slow feedback loops**: Waiting 5 seconds to see if a form submission succeeded.
-
-**The principle**: Observe where users hesitate, make mistakes, or give up. These are friction points. Fix them ruthlessly, regardless of who made the original design decision.
-
-**The practice**: Watch real users interact with the interface. Run usability tests. Read support tickets. Join sales calls. The patterns emerge quickly, and they're often humbling. Fixing them is how products people love get built.
-
-## Multimodal Inputs
-
-Users interact with interfaces in different ways, not just physically, but conceptually.
-
-### Physical Input Modes
-
-**Keyboard navigation**:
-- All interactive elements must be keyboard accessible
-- Tab order should follow visual flow
-- Shortcuts should be discoverable (Cmd+K for command palette, / for search)
-- Focus states should be obvious, not hidden
-
-**Mouse interactions**:
-- Hover states provide immediate feedback
-- Click targets should be large enough (minimum 44x44px for touch)
-- Dragging should feel natural, not laggy
-
-**Touch interactions**:
-- No hover-dependent features (hover doesn't exist on touch)
-- Swipe gestures should be intentional, not accidental
-- Long press can replace right-click, but make it discoverable
-
-**The test**: Can the app be used with only a keyboard? Only a mouse? Only touch? Any failure here excludes users.
-
-### UI Interaction Modes
-
-Multimodal goes beyond physical inputs. It's also about **how** users interact with the interface:
-
-- **Typing code vs visual UIs**: Power users might prefer writing raw config. Less technical users might prefer guided workflows with dropdowns and toggles. Support both.
-- **Raw forms vs guided inputs**: A text field that accepts any string is flexible but error-prone. Number ranges, checkboxes, enum selections, or even AI querying and generation reduce mistakes and guide users toward valid inputs.
-
-Combined with progressive disclosure, these inputs fit into the UI without overwhelming it. If they're hidden but discoverable, users who need them will find them, or set them as defaults.
-
-**Example**: A filter interface could offer a visual query builder for beginners and a raw SQL input for power users. Let the user toggle between modes.
+Take feedback without ego. When a user struggles, that's a design problem regardless of how they articulate it. Read support tickets. Join sales calls. Watch real sessions. Fix friction ruthlessly.
 
 ---
 
 ## Motion Design
 
-Motion design is the layer that makes an interface feel alive. Without it, even a well-structured, well-organized product feels static and mechanical. Motion communicates responsiveness, guides attention during transitions, and provides continuity between states. It's the difference between a light switch and a dimmer: both change the state, but one feels considered.
+Motion is the layer that makes an interface feel alive. Without it, even a well-structured product feels static and mechanical. With too much of it, everything feels slow.
 
-The key tension in motion design is between delight and speed. Animation should make waiting feel shorter, transitions feel smoother, and interactions feel acknowledged, without ever making a user wait. Done right, users can't point to any single animation, but the whole product just *feels* good.
+**Speed is a product feature.** Linear proved this — the architecture of features matters on the engineering side, but the felt speed of every interaction is a design decision too. The key tension is delight versus latency. Animation should make waiting feel shorter and transitions feel smoother, without ever making a user wait.
 
-## Delight Through Microanimations
+Everything is restraint.
 
-Small, intentional animations make interfaces feel alive. A button that subtly scales on hover, a card that gently lifts, a modal that eases in rather than snaps. These details communicate that the interface is responding.
+### React Fast
 
-The key is restraint. Microanimations should:
-- **Be fast**: 150-250ms is the sweet spot
-- **Serve a purpose**: Communicate state changes or guide attention
-- **Never block interaction**: Animation shouldn't delay the user's next action
+High-frequency interactions must have zero perceived latency. Table row hovers, keystrokes in inputs, button press feedback — if the user moves faster than the UI responds, it feels broken.
 
-Here's the magic: if a user isn't really paying attention, they could miss a microanimation entirely, and that's perfectly fine. The collection of precise, polished microanimations they couldn't explain individually gives them a feeling of beauty, craft, and delight that can't be quantified easily. Combined with a clean interface, it just *feels* good.
+- **Skeletons over blocking spinners** when content is loading. Show the shape of what's coming instead of a blank screen.
+- **Shimmers in skeletons** signal that loading is active, not frozen.
+- **Loading spinners** when an action is in flight and the user needs to know something is happening — save, delete, submit.
+- **Optimistic updates** for validated actions: update the UI immediately, roll back gracefully on failure with a toast and coherent state.
+- **Preload predictably** — prefetch on hover or viewport entry when the next navigation is likely. Don't speculatively load everything.
 
-**Example**: When a form submits successfully, fade out the form while fading in a success message. The transition softens the state change and feels intentional rather than jarring.
+Use optimistic updates for form submissions where validation passed, CRUD on user-owned data, and actions unlikely to conflict. Wait for payment transactions, concurrent writes, and shared state mutations.
 
-## Snappy, Blazing Fast Experiences
+### Subtle Motion Tricks
 
-Performance is a design feature. An interface that responds instantly feels polished and trustworthy; lag of even 100ms feels broken.
+Motion should communicate, not decorate.
 
-**The Rule**: High-frequency interactions must have zero latency.
+- **Hover without transition on rapid movement** — instant feedback as the cursor crosses rows or list items, so detection of the current item never lags behind the pointer.
+- **Motion blur scaled to distance** — larger transitions get slightly more easing; small state changes snap.
+- **Staggered fade-in by importance** — primary content appears first, secondary details follow. Guides attention without blocking interaction.
+- **Microanimations at 150–250ms** for low-frequency state changes — modal entry, success confirmation, panel expand. Fast enough to feel responsive, slow enough to read.
 
-- **Table row hovers**: No delays. Instant feedback. A 50ms transition on hover means the user moves their mouse across multiple rows before seeing any response. It feels unresponsive.
-- **Input fields**: Keystroke latency must be imperceptible. Debounce search, but never throttle typing.
-- **Button clicks**: Visual feedback should be immediate, even if the action is async.
+If a user isn't paying attention, they should be able to miss any single animation entirely. The collection of precise, restrained motion is what creates the feeling of craft.
 
-**Anti-pattern**: Animating every hover state. Reserve animations for low-frequency interactions where delight matters more than speed.
-
-### Preloading: Making everything feel warm
-
-Perceived performance is often more important than actual performance. Users tolerate a 500ms wait if the interface feels responsive. They rage at a 200ms delay if nothing happens on screen.
-
-**Smart preloading strategies:**
-
-- **Link prefetching**: On hover or when a link enters the viewport, prefetch the next page's data. By the time the click happens, it's already loaded. Next.js does this automatically with `<Link>` components in production.
-- **Route-based preloading**: If 80% of users who land on a dashboard immediately navigate to the reports page, preload that data during idle time on the dashboard.
-- **Large dynamic dependencies**: Code-split heavy libraries (charts, editors, file pickers), but preload them when the user is likely to need them. When a settings panel opens, start loading the markdown editor before the "Edit" click.
-
-**When preloading is worth it:**
-- The resource is large enough that network latency matters (>100kb)
-- The user journey is predictable (A to B happens 70%+ of the time)
-- You have idle time (user is reading, scrolling, hovering)
-- The resource can be cached (subsequent visits are instant)
-
-**When to just use a skeleton:**
-- The data is small and loads in under 200ms
-- The user journey is unpredictable (they could go anywhere)
-- Preloading would waste bandwidth on mobile
-- The data is user-specific and can't be cached
-
-**The principle**: Be smart about when to preload. When the path is obvious and the cost is low, make it feel instant. Don't waste resources speculatively loading everything else.
-
-## Optimistic Updates
-
-Assume the happy path. When the user clicks "Save," update the UI immediately based on what was already validated on the client.
-
-**When to use optimistic updates**:
-- Form submissions where validation passed
-- CRUD operations on user-owned data
-- Actions unlikely to conflict (e.g., updating a profile, not booking a limited resource)
-
-**When to wait**:
-- Payment transactions
-- Concurrent writes (e.g., collaborative editing)
-- Actions that mutate shared state
-
-The trade-off is clear: optimistic updates make interfaces feel instant, but rollback must be handled gracefully on failure. Show a toast and revert the state, leaving the user in a coherent place.
+Anti-pattern: animating every hover state. Reserve motion for moments where it clarifies a state change or guides attention. A 200ms fade on success is helpful. A 1s animation that blocks the next click is hostile.
 
 ---
 
-## Hot Take: Server Rendering Isn't Always the Answer
+## Designing with AI
 
-Next.js popularized server rendering as the default. After leaning on it for a while, I came to see that client-side rendering with good caching is often simpler and faster.
+AI changes the iteration loop for design, not just for code. You can ask an agent to generate three to five visual directions on the same feature and iterate on what you like or dislike in each one. Generation is cheap. Judgement is not.
 
-**When server rendering makes sense**:
-- SEO-critical pages
-- Static content with infrequent changes (ISR)
-- Super fast API reads in the same region as your server
+### Two ways agents design — and what each misses
 
-**When it doesn't**:
-- Highly interactive dashboards
-- Apps with personalized, user-specific data
-- Cases where client-side caching is easier than syncing server/client caches
+**By code.** Describe the feature, get back JSX and CSS. Fast, editable, shippable. But code-first generation optimizes for what compiles, not what reads. It'll produce a working form before it produces a form with the right density, hierarchy, or alignment. The tree is correct; the picture is wrong. You get locally reasonable decisions that don't compose into something that feels considered.
 
-**The problem**: Server rendering pushes client cache logic to the server, which adds latency. A fast client-side cache hit gets traded for a slower round-trip to the server, even if the data is cached there. For many apps, a skeleton loader and a fast client-side fetch is better UX than waiting for server-rendered HTML.
+**By screenshots.** Paste a reference or ask for a mock from an image. Better for the static frame — spacing, color, layout at a glance. But a screenshot is one frame. It doesn't capture hover states, loading skeletons, optimistic rollback, staggered reveals, or what happens when the user tabs through with a keyboard. Motion and interaction patterns live in behavior over time; a PNG can't encode them. You'll still have to specify those separately, and that's where vague feedback fails.
 
-**The nuance**: If the server is in the same region as the database and the API is blazing fast, server rendering can be a win. For a SaaS dashboard, client-side rendering with optimistic updates and good cache management often feels faster.
+Both paths struggle with **vision and judgement** — knowing what the whole should feel like, what to leave out, when something is close versus when it's off in a way that compounds. Expert designers are still better at this, not because agents can't render UI, but because they've built a vocabulary for discussing what's wrong and what to try next.
 
-## Sanity Checks
+### Learn the language
 
-Before shipping, ask:
-- **Does it feel fast?** If not, profile it. Trim animations, optimize queries, preload data.
-- **Does it feel alive?** Motion should reinforce interactivity, not replace it. Transitions guide attention (button press, loading state, success), but motion should never delay feedback. A 200ms fade is helpful; a 1s animation that prevents interaction is hostile. Motion is a clarifier, not a blocker.
-- **Is the visual hierarchy clear?** Glance away, look back, and see where attention lands. Is it the right place?
-- **Are high-frequency interactions instant?** Hover, click, type. No delays.
-- **Does rollback work?** If optimistic updates fail, does the UI recover gracefully?
-- **Is progressive disclosure working?** Does the interface feel simple by default, or is it overwhelming?
-- **Is it all necessary all the time?** Can anything be hidden, collapsed, or deferred without losing functionality?
-- **What can go wrong, and how does the interface guide users back to safety?** Invalid form inputs, accidental deletions, unsaved changes. Does the UI catch these and help recovery?
+The gap you can close is vocabulary. Agents respond to precision. "This feels uneven" gives them nothing actionable. "Left-align these labels in a two-column grid with `7rem` for the label column" gives them a constraint. "Make it pop" is useless. "Increase weight on the section title only — keep labels at regular weight and muted" is a direction.
 
-Design is about building interfaces that feel right. The best way to learn is to build, observe, and iterate.
+The principles in this article are partly that language:
+
+- Not "messy" — **labels and inputs aren't on a shared grid**
+- Not "inconsistent" — **border radius drifts across controls that should share a token**
+- Not "overwhelming" — **too many options visible before the user has context for them**
+- Not "sluggish" — **row hover has a 150ms transition on a high-frequency interaction**
+- Not "confusing error" — **every field returns the same generic message**
+
+You don't need to become a designer. You need to name what you see in terms an engineer or an agent can execute: flex versus grid, which axis to align on, which elements share a type scale, what gets disclosed later, what must be instant versus what can ease in.
+
+Critique is a skill that compounds. The more specifically you can say what's wrong, the faster iteration gets — with a teammate, with an agent, or with yourself six months from now revisiting the same screen. The agent proposes. You judge. Better judgement starts with better words.
+
+
+---
+
+## Before You Ship
+
+- Does it feel fast? Profile it. Trim animations. Preload predictable paths.
+- Is the hierarchy clear? Glance away, look back — does attention land in the right place?
+- Does the interface explain itself? Would a first-time user need a tutorial?
+- Is density right for this feature? Too sparse wastes space; too dense overwhelms.
+- Are high-frequency interactions instant? Hover, click, type — no lag.
+- Does rollback work? Optimistic updates that fail should leave the user somewhere coherent.
+- Is motion restrained? Every animation should earn its milliseconds.
+- What can go wrong, and how does the interface guide users back to safety?
+
+Design is a craft learned by building, observing, and iterating. The best way to get better is to ship, watch users struggle, and fix what they hit.

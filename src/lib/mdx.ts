@@ -1,7 +1,14 @@
+import type { ComponentType } from "react";
 import fs from "node:fs";
 import path from "node:path";
 
 import { compileMDX } from "next-mdx-remote/rsc";
+
+import * as DesignPrinciplesDemos from "@/components/design-principles-demos";
+
+const ARTICLE_COMPONENTS: Record<string, Record<string, ComponentType>> = {
+  "design-principles-frontend": DesignPrinciplesDemos,
+};
 
 const contentDirectory = path.join(process.cwd(), "src/content");
 
@@ -76,6 +83,7 @@ export async function getMDXContent(slug: string) {
   const { content, frontmatter } = await compileMDX<MDXFrontmatter>({
     source,
     options: { parseFrontmatter: true },
+    components: ARTICLE_COMPONENTS[slug],
   });
   validateFrontmatter(frontmatter as Record<string, unknown>, slug);
   return { content, frontmatter };
