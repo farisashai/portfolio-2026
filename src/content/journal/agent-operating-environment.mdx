@@ -1,0 +1,103 @@
+---
+title: "An Operating Environment Built for Agents"
+description: "Design the codebase itself as the environment agents execute in: deterministic context, strict CI, custom linters, generated contracts, and auditable rules that compound."
+date: "May 2026"
+keywords: "AI, Agents, Codebase Design, Monorepo, CI, Linting, Type Safety, Codegen, Developer Experience"
+labels: ["Engineering", "Learnings"]
+featured: false
+draft: false
+---
+
+Agentic coding only works safely when the codebase is designed as the environment the agent executes in.
+
+Prompts do not work as rules or context. They are advisory, easy to ignore, and detached from the source of truth. Determinism has to live in the codebase: complete context through a monorepo, generated contracts, native documentation, strict CI, and custom linters that encode the rules directly.
+
+## Deterministic Context
+
+Agents start cold. A prompt can describe the system, but it cannot replace the system.
+
+The source of truth should be available in one place, even for loosely related projects that depend on each other: product surfaces, APIs, clients, workers, internal tools, generated types, docs, tests, and infrastructure.
+
+The simplest way to give an agent context is to let it discover the system instead of explaining an external one. If the API and client application live together, the agent can read both sides of a contract. If infrastructure as code lives beside the product, deployment state becomes part of the same reasoning flow. Debugging is simpler because the full product is visible, changes are testable, and confidence comes from checks instead of explanation.
+
+The strongest benefit is end-to-end codegen across language environments. Go constants can generate TypeScript enums. Protobuf schemas can generate typed API clients. Backend contracts can generate frontend validation and docs. When the backend changes, the generated frontend types break in the same PR instead of drifting silently.
+
+Context becomes deterministic when the codebase contains the thing the prompt would otherwise summarize.
+
+## Holding a Quality Bar
+
+The only way a long-term codebase lasts is with human-readable code that can be reasoned through, approved, and maintained without AI.
+
+The agent can speed up implementation, but it has to pass the same rigor as a full human PR review: strict typing, tests, generated contracts, design system constraints, file length limits, and rules that force existing patterns instead of hand-rolled solutions.
+
+Deterministic rules avoid prompting entirely. Let the model implement the feature as it sees fit, then require custom lint and CI checks to pass. The rules do not have to be remembered anywhere. The model only has to see the error message, understand what it violated, and fix the code.
+
+The nuance is that the review does not need to happen at PR time. If the agent can run the checks during implementation, it can loop until the first draft already satisfies the rules. The agent does not need to remember every convention. The codebase should reject violations automatically.
+
+Real reviews, for human code or agent code, should focus on design, architecture, and product decisions.
+
+## Custom Linters Compound
+
+Every repeated review comment is a missing rule.
+
+A custom lint rule is a product flywheel. If the team agrees once that a pattern is harmful, the decision should not come up again in every pull request. The rule should be auditable, documented by the failure case it prevents, and narrow enough that it does not cripple necessary implementation behavior.
+
+This is the same value formatters gave us for line length, quotes, imports, and brackets. The difference is that we can now apply the same idea at a higher level: React patterns, state management, generated types, file structure, component usage, and architecture boundaries.
+
+The goal is not to make reviews stricter. The goal is to stop spending review time on issues the codebase can already prove.
+
+## Brutal Rules Are Fine
+
+A linter for agents can be brutal because agents generate code quickly.
+
+Hard file length limits are fine. Banning unsafe type escapes is fine. Forcing shared components and shared functions is fine. Requiring the existing data-fetching, form, typography, and state patterns is fine.
+
+Humans with expertise and context are less likely to write bad code, and they should still obey the same rules. The point is not to punish humans. The point is to keep the codebase simple enough that humans can still understand it.
+
+## Heuristics Are Enough
+
+Custom rules do not need perfect correctness.
+
+They are linters on code quality, not shipped code. The priority is zero false negatives for mistakes the team has decided are unacceptable. False positives are tolerable if they can be handled explicitly.
+
+If the agent is confident the code is right, it can either update the rule or disable it with a required `// disable-rule` comment explaining why. That decision lives in the codebase. Approved violations can be scanned later if the team decides the exception was wrong.
+
+At agent speed, unknown unknowns are the expensive failure mode. Questionable code should be flagged by default unless the rule is confidently wrong.
+
+## Zero Trust by Default
+
+Agentic coding needs full auditability at every layer.
+
+Visual surfaces should have Storybook coverage. Behavior should have required unit tests. Generated code should be checked in or reproducible in CI. API contracts should be typed end to end. Every exception should leave a trace.
+
+Development time is the best time to require tests. The agent still has the full feature context, the prompt requirements, and the implementation in memory. The tests will not be perfect, but they are much better than nothing and usually cover edge cases that would otherwise be forgotten.
+
+The model can generate volume. The environment has to make that volume reviewable.
+
+## Remove Footguns
+
+Any Turing-complete language has too many ways to implement the same task badly.
+
+Agents choose statistically likely implementations. They over-handle errors, create massive files, duplicate patterns, and take the shortest path to a passing result. If a pattern is a code smell and not required for implementation, ban it the same way you would tell an engineer never to write it.
+
+Take away features that create unnecessary ambiguity. Collapse decisions into a finite set of shared functions, shared components, shared typography, shared state patterns, and shared APIs.
+
+You cannot keep up with edge cases that scale infinitely. Classify behavior and place it in a box that can be reviewed thoroughly. In a stable product, it becomes increasingly rare that new paradigms are needed.
+
+## Do Not Build on the Tool Layer
+
+Agent tools will keep changing.
+
+Cursor rules, Codex skills, Claude plugins, memories, prompt files, and harness-specific context injection are useful, but they are unstable layers to build on. They can be replaced or thrown away.
+
+The durable layer is the codebase itself: generated types, checked contracts, custom linters, tests, Storybook, and CI. Those rules survive the next model and the next tool because they are not instructions to the agent. They are properties of the environment.
+
+## The Work That Remains
+
+The point is not to remove engineers from the loop.
+
+It is to move the loop earlier. Agents should hit the same constraints during implementation that a reviewer would enforce later. By PR time, the easy feedback should already be resolved.
+
+What remains is the real work: deciding what to build, whether the architecture is right, whether the interaction makes sense, and whether the feature belongs in the product.
+
+The operating environment makes validation easier. It keeps code human-readable without slowing implementation to human speed. Every rule that prevents a repeated mistake gives time back to design, architecture, and product judgment.

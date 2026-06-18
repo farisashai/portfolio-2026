@@ -145,10 +145,10 @@ const writing: WritingItem[] = [
     slug: "visual-rego-editor",
   },
   {
-    title: "The Monorepo Is the Harness",
+    title: "An Operating Environment Built for Agents",
     description:
-      "Using AI-assisted development workflows, automation, and tooling to scale engineering output.",
-    slug: "monorepo-agent-harness",
+      "Designing a fail-proof environment for agentic coding on serious products.",
+    slug: "agent-operating-environment",
   },
 ];
 
