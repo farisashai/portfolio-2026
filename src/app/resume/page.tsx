@@ -127,7 +127,7 @@ const skills = [
   },
   {
     label: "Tools",
-    items: "Git, Figma, Xcode, Postman, CI/CD",
+    items: "Git, Figma, Xcode, Postman",
   },
 ];
 
