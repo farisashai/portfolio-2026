@@ -97,6 +97,20 @@ Example: "Speed makes this matter more, not less. Agents iterate faster than hum
 
 The second version makes the same claim in 30% of the words. That's the target.
 
+### Technical principle articles should be compact
+
+Some articles are not personal narratives. When the subject is a precise engineering philosophy or codebase design principle, use a compact sectioned structure:
+
+1. State the thesis in one or two short paragraphs.
+2. Give each principle its own heading.
+3. Keep each section to one concrete idea.
+4. Use short paragraphs instead of long explanatory blocks.
+5. End with the practical consequence, not a recap.
+
+The target is `agent-operating-environment.mdx`: brief, sectioned, technical, and direct. It surfaces the important ideas without walking through every possible edge case.
+
+Do not pad these articles with scene-setting, motivational framing, industry narrative, or abstract examples. The reader should feel the article was compressed, not underdeveloped.
+
 ### Tighten after adding
 
 When new content gets added to a draft (a new paragraph, a clarification, an example), do a tightening pass on it before finishing the turn. Additions tend to arrive verbose, and an article that's been edited many times accumulates length even when each individual edit was justified. After adding, audit the new text: cut filler clauses, collapse two sentences into one, prefer the shorter phrasing when the meaning is identical. The default should be that any addition ends up shorter than the first draft of it.

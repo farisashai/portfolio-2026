@@ -1,0 +1,114 @@
+---
+title: "Compiling Type-Safe Cross-Language Systems"
+description: "Language boundaries should not create duplicate truths. Shared schemas, generated local types, and CI can keep backend, frontend, workflows, and infrastructure aligned."
+date: "June 2026"
+keywords: "Go, TypeScript, Protobuf, OpenAPI, Codegen, Type Safety, CI, Monorepo"
+labels: ["Engineering"]
+featured: false
+draft: false
+---
+
+Distributed product systems rarely live in one language.
+
+The backend might be Go. The frontend is TypeScript. A workflow service might accept YAML or JSON payloads submitted from the UI and executed by workers. Infrastructure defines deployment state somewhere else. Every boundary creates pressure to copy the same truth into a local format: Go constants become TypeScript enums, protobuf messages become handwritten client types, OpenAPI specs become fetch wrappers, workflow payloads become duplicated request shapes.
+
+That copy is where drift starts.
+
+## Make Implementation Safer
+
+The goal is cross-language reliability with lower cognitive load.
+
+Maintenance gets harder when every change requires remembering the same fact in several projects. A backend engineer should not have to remember every frontend consumer before changing an API. A frontend engineer should not have to trust that response shapes stayed stable. A reviewer should not have to mentally diff two language environments to know whether the product still works.
+
+The contract should be derived from the final output in the source language that actually has to change for the feature. Protobuf and OpenAPI are good locations for this because they already describe the request and response surface the backend is required to update. The exact format matters less than the property: every environment can generate its local view from the same source.
+
+## Colocation Changes the Assumption
+
+The default assumption is that language boundaries prevent a single source of truth. Go cannot import TypeScript. TypeScript cannot import Go. Frontend packages usually cannot read backend internals. Typical import patterns stop at the project boundary.
+
+Code generation can cross that boundary without changing either language environment.
+
+A colocated codebase lets code generation cross boundaries normal imports cannot. A Go package can remain Go. A TypeScript client can remain TypeScript. The shared contract sits between them, and CI proves both sides still agree.
+
+This is one of the largest returns of a monorepo. APIs, clients, workers, generated files, docs, and infrastructure can be reasoned about in one change. The agent operating on the codebase can discover the contract instead of being told about it.
+
+This falls apart across separate repos faster than it seems. Each repo has its own CI, its own checkout, and its own view of "latest." A backend repo can regenerate its contract and pass. A frontend repo can pass against the last published package. Neither one has proven the newest backend, newest generated types, newest frontend consumers, and newest tests agree at the same time.
+
+Schema registries and contract packages help, but they reintroduce release ordering as coordination. Someone still has to publish, update, remember the right version, and validate the downstream state. Colocation removes that memory step. The full product can fail in one CI run.
+
+## Generate Local Shapes From Shared Contracts
+
+Protobuf and OpenAPI are the obvious inputs for request and response shapes. They sit where the backend change already has to happen, and they describe structured data in a language-agnostic format. They can generate ConnectRPC clients, REST clients, validators, documentation, and frontend types.
+
+This is why generated clients are better than controlling fetch calls by hand. A ConnectRPC Web client already knows the endpoint pattern, request body, response shape, and deprecated or removed methods. The frontend should call the generated method, not reconstruct the URL and payload for every endpoint.
+
+The same idea applies beyond APIs.
+
+- Go constants can generate TypeScript enums.
+- Workflow definitions can generate typed payloads.
+- Infrastructure definitions can generate deployment-aware configuration.
+- Backend contracts can generate frontend validation and documentation.
+
+At Formal, governance spans many resource types and database technologies. Adding support for a new one affects more than the backend connector. The frontend needs to know which auth modes it supports, whether it exposes structured data, which icon to show, which configuration fields are valid, and which workflows should appear. Forget one detail and the UI breaks in a new edge case for that technology.
+
+That kind of work should not depend on updating half a dozen lists by hand. The source-language definition for the technology should drive the generated frontend shape: supported auth, structured-data capability, display metadata, docs, and typed configuration. The product still has many surfaces, but they are projections of one source.
+
+This still feels uncommon because codegen scripts can look messy: dynamic strings interpolated into raw files that are later interpreted as code. The surface looks brittle, but the problem is usually easy to verify. Given this Go array of strings, produce this TypeScript constant list. Given this struct, produce this array of objects. The generator can be unit tested across source inputs, and the generated output is checked by the target language compiler.
+
+This is also one of the places I enjoy using AI most. The marginal cost of writing small generators has collapsed, which changes the architecture tradeoff. I would not have attempted many of these before because getting every edge right took too long. Now the generator can be written, tested, and refined quickly enough that the cross-language contract is worth building.
+
+The generated local shape should be boring. It should contain no business logic and no creative abstraction. Code generation compresses a boundary. Product code should use native types in its own language without owning the truth.
+
+## Code Generation and CI Are One Loop
+
+Generated code should not be a hand-maintained artifact that pulls attention away every time a field changes.
+
+The system should be built once and maintained like infrastructure. CI regenerates clients, request types, response types, enums, validators, and docs on every commit. Then it runs typechecking and tests. If a backend change breaks a frontend consumer, the build fails. If a generated enum changed but the UI still assumes the old cases, the build fails. If a workflow payload no longer matches the worker, the build fails.
+
+The output can be checked in when reviewability matters, or regenerated as a build artifact when diffs would be too noisy. The invariant is the same: CI proves the generated view is current and every consumer still compiles.
+
+The pipeline is simple:
+
+- Source contracts define truth.
+- Generators project that truth into each language.
+- Typechecking and tests validate every projection.
+- CI fails when any layer drifts.
+
+## Type Safety Needs Enforcement
+
+Generated contracts only matter if the codebase cannot route around them.
+
+TypeScript can express precise relationships across generated types, but it can also erase them. `any`, loose `unknown`, unchecked `as`, and handwritten duplicate shapes turn type safety into decoration.
+
+The surrounding rules have to protect the contract:
+
+- Ban `any` and unsafe assertions.
+- Require schemas at runtime boundaries.
+- Model transformations with unions, intersections, `Pick`, and `Omit`.
+- Prefer generated clients over handwritten wrappers.
+- Require auditable disables when a rule is intentionally bypassed.
+
+This is where custom linting and generated contracts reinforce each other. The generator creates the source of truth. The linter prevents code from pretending the source of truth does not exist.
+
+## Lean Teams Need Stable Systems
+
+The value is not autocomplete.
+
+The value is that coordination becomes mechanical. A backend engineer can change an API without manually auditing every frontend consumer. A frontend engineer can trust the generated client. A reviewer can focus on whether the product change is right instead of whether every downstream type was remembered.
+
+Lean teams cannot afford unstable systems that break under predictable change. New feature support, new resource types, new enum values, and new request fields are normal product motion. The system has to keep working when those changes happen.
+
+Lean teams stay fast when forgotten work fails early.
+
+Request shape drift fails. Response shape drift fails. Enum drift fails. Missing consumer updates fail. Generated constants fail when the backend changes. The system remembers what humans should not have to.
+
+This is the same principle as a stricter agent operating environment. Do not trust memory when the build can enforce the rule.
+
+## Focus on Using Data
+
+The boundary should disappear from product work.
+
+Frontend code should use typed clients. Workflow code should use typed payloads. Deployment code should use typed configuration. Engineers should spend time on the feature, not on translating contracts by hand.
+
+Cross-language systems can be type-safe if the contract is shared, code generation is automatic, and escape hatches are treated as violations. The payoff is not cleaner types. It is a product system that cannot quietly disagree with itself.
+
