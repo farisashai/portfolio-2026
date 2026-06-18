@@ -24,6 +24,8 @@ We achieve this through three design layers — **visual**, **interaction**, and
 
 Visual design is what users see before they do anything. Layout, typography, color, spacing, hierarchy. It builds trust or creates doubt before a single click.
 
+Know what you're optimizing for. Some surfaces exist to delight — onboarding, a launch moment, a first-run experience where you're telling a story and earning emotional buy-in. Others exist to sell powerful functionality: admin tools, security consoles, infrastructure dashboards. There the job is usability and trust first — signals that the system is stable, reliable, and secure before anyone cares about personality. Flair on a policy editor doesn't build confidence; consistent alignment and clear hierarchy do. Match the visual register to the job. Delight where the moment earns it. Default to restraint where the user is deciding whether to trust you with something important.
+
 ### Design Systems
 
 Build consistent systems. An allowlisted spacing scale, a small set of display and label fonts, a fixed set of font sizes, and a component library that is auditable and tweakable without reproducing every edge case state.
@@ -115,7 +117,11 @@ The failure modes sit at opposite ends. A 20-step wizard for something that coul
 
 The target is somewhere in between: a panel that feels open and scannable, with related controls grouped, common paths obvious, and advanced or rare settings tucked behind a collapse, a tab, or a secondary screen. The user should see enough to understand what the feature does and complete the happy path without scrolling through configuration they'll never touch.
 
-Configuration is stress. Every option creates cognitive load — understand it, evaluate it, choose a value, live with the consequence. Default to sensible choices. If fewer than 20% of users need a setting, make it opt-in.
+Configuration is stress. Every option creates cognitive load — understand it, evaluate it, choose a value, live with the consequence.
+
+**The principle:** Default to sensible choices. Hide advanced configuration behind progressive disclosure. If a setting is needed by fewer than 20% of users, make it opt-in, not front-and-center.
+
+**The nuance:** Power users will always want more control. That's fine. Support them through escape hatches, advanced modes, or raw config files. But don't punish the majority by forcing them to navigate complexity they don't need.
 
 **When to disclose later:**
 - Advanced tuning that most users never change
@@ -228,4 +234,8 @@ Critique is a skill that compounds. The more specifically you can say what's wro
 - Is motion restrained? Every animation should earn its milliseconds.
 - What can go wrong, and how does the interface guide users back to safety?
 
-Design is a craft learned by building, observing, and iterating. The best way to get better is to ship, watch users struggle, and fix what they hit.
+---
+
+Good product designers develop instincts for grouping, hierarchy, friction, and disclosure — not from credentials, but from building and critiquing real interfaces. Frontend engineers can learn the same lens. It matters more now: agents handle implementation; the bottleneck is judgment. Whether a layout groups related fields, whether friction lives in the error copy or the control choice, whether motion earns its milliseconds — that's what separates a shipped feature from a product that feels considered.
+
+You don't need to become a designer. You need to name what you see in terms an engineer or an agent can execute. Ship, watch where users struggle, and iterate with better words.

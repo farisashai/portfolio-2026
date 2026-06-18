@@ -1,0 +1,206 @@
+/* Screen layout */
+.resume-page {
+  --resume-max-width: 8.5in;
+}
+
+.resume-writing-link {
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+/* Print: isolate resume content, force light palette, letter sizing */
+@media print {
+  @page {
+    size: letter;
+    margin: 0.5in;
+    background: white;
+  }
+
+  :root,
+  html.dark {
+    color-scheme: light;
+    --background: oklch(1 0 0) !important;
+    --foreground: oklch(0.145 0 0) !important;
+    --muted: oklch(0.97 0 0) !important;
+    --muted-foreground: oklch(0.45 0 0) !important;
+    --secondary: oklch(0.97 0 0) !important;
+    --secondary-foreground: oklch(0.145 0 0) !important;
+    --border: oklch(0.88 0 0) !important;
+  }
+
+  html,
+  html.dark,
+  body {
+    background: white !important;
+    background-color: white !important;
+    color: black !important;
+    height: auto !important;
+    overflow: visible !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .bg-background {
+    background-color: white !important;
+  }
+
+  .text-foreground {
+    color: oklch(0.145 0 0) !important;
+  }
+
+  .text-muted-foreground {
+    color: oklch(0.45 0 0) !important;
+  }
+
+  .border-border {
+    border-color: oklch(0.88 0 0) !important;
+  }
+
+  .resume-entry li > span:first-child {
+    background-color: oklch(0.45 0 0 / 0.5) !important;
+  }
+
+  /* Hide site chrome; let the resume flow naturally across pages */
+  nav,
+  footer {
+    display: none !important;
+  }
+
+  .resume-page {
+    position: static !important;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: white !important;
+    background-color: white !important;
+  }
+
+  .resume-page > * {
+    max-width: none !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .resume {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    font-size: 9.5pt;
+    line-height: 1.35;
+    background: white !important;
+    background-color: white !important;
+    color: oklch(0.145 0 0) !important;
+  }
+
+  .resume h1 {
+    font-size: 16pt !important;
+    line-height: 1.15;
+  }
+
+  .resume h2 {
+    font-size: 9pt !important;
+    margin-top: 0 !important;
+    margin-bottom: 6pt !important;
+    color: oklch(0.145 0 0) !important;
+    letter-spacing: 0.06em;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .resume > .resume-section:not(:first-child) {
+    margin-top: 14pt !important;
+    padding-top: 0 !important;
+  }
+
+  .resume .text-sm,
+  .resume p,
+  .resume li,
+  .resume span,
+  .resume a {
+    font-size: 9.5pt !important;
+    line-height: 1.35 !important;
+  }
+
+  .resume hr {
+    display: none !important;
+  }
+
+  .resume .gap-5 {
+    gap: 7pt !important;
+  }
+
+  .resume .gap-4 {
+    gap: 5pt !important;
+  }
+
+  .resume .gap-1\.5 {
+    gap: 2.5pt !important;
+  }
+
+  .resume .mb-4 {
+    margin-bottom: 4pt !important;
+  }
+
+  .resume .mb-2 {
+    margin-bottom: 2pt !important;
+  }
+
+  .resume .mb-1 {
+    margin-bottom: 1pt !important;
+  }
+
+  .resume .my-6,
+  .resume .my-5 {
+    margin-block: 6pt !important;
+  }
+
+  .resume .mt-2 {
+    margin-top: 3pt !important;
+  }
+
+  .resume .leading-relaxed {
+    line-height: 1.35 !important;
+  }
+
+  /* Allow large sections to span pages; keep logical blocks together */
+  .resume-section {
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  .resume-entry {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .resume-entry > div:first-child,
+  .resume-entry > p {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .resume-entry li {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    orphans: 2;
+    widows: 2;
+  }
+
+  a {
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+
+  a.resume-writing-link {
+    text-decoration: underline !important;
+    text-decoration-thickness: 0.75pt !important;
+    text-underline-offset: 2pt !important;
+  }
+
+  .resume strong {
+    font-weight: 600 !important;
+    color: oklch(0.145 0 0) !important;
+  }
+}
